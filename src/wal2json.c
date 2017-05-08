@@ -31,6 +31,7 @@
 #include "utils/lsyscache.h"
 #include "utils/memutils.h"
 #include "utils/pg_lsn.h"
+#include "utils/inval.h"
 #include "utils/rel.h"
 #include "utils/relcache.h"
 #include "utils/syscache.h"
@@ -56,6 +57,8 @@ static void pg_decode_change(LogicalDecodingContext *ctx,
 void
 _PG_init(void)
 {
+	/* Register the callback to receive schema changes */
+	CacheRegisterRelcacheCallback(reldata_invalidate, (Datum)0);
 }
 
 /* Specify output plugin callbacks */
@@ -249,6 +252,8 @@ pg_decode_begin_txn(LogicalDecodingContext *ctx, ReorderBufferTXN *txn)
 
 	data->nr_changes = 0;
 
+	reldata_to_invalidate(data->reldata);
+
 	if (!data->skip_empty_xacts)
 		output_begin(ctx, data, txn, true);
 }
@@ -308,6 +313,8 @@ pg_decode_commit_txn(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 					 XLogRecPtr commit_lsn)
 {
 	JsonDecodingData *data = ctx->output_plugin_private;
+
+	reldata_to_invalidate(NULL);
 
 	if (txn->has_catalog_changes)
 		elog(DEBUG1, "txn has catalog changes: yes");

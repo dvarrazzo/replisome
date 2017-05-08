@@ -1,0 +1,628 @@
+\set VERBOSITY terse
+-- predictability
+SET synchronous_commit = on;
+DROP TABLE IF EXISTS table_with_pk;
+DROP TABLE IF EXISTS table_without_pk;
+DROP TABLE IF EXISTS table_with_unique;
+CREATE TABLE table_with_pk (
+	i int,
+	a text,
+	b text,
+	PRIMARY KEY(i, a)
+);
+CREATE TABLE table_without_pk (
+	i int,
+	a text,
+	b text
+);
+CREATE TABLE table_with_unique (
+	i int not null,
+	a text not null,
+	b text,
+	UNIQUE(i, a)
+);
+SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'wal2json');
+ ?column? 
+----------
+ init
+(1 row)
+
+-- Schema omitted on table repeated
+insert into table_with_pk values (1, 'a', 'b');
+insert into table_with_pk values (2, 'a', 'b');
+update table_with_pk set a = 'A' where i = 2;
+update table_with_pk set b = 'B' where i = 2;
+delete from table_with_pk where i = 1;
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'include-xids', '0', 'pretty-print', '1', 'skip-empty-xacts', '1');
+                               data                               
+------------------------------------------------------------------
+ {                                                               +
+         "change": [
+                 {                                               +
+                         "kind": "insert",                       +
+                         "schema": "public",                     +
+                         "table": "table_with_pk",               +
+                         "columnnames": ["i", "a", "b"],         +
+                         "columntypes": ["int4", "text", "text"],+
+                         "columnvalues": [1, "a", "b"]           +
+                 }
+         ]                                                       +
+ }
+ {                                                               +
+         "change": [
+                 {                                               +
+                         "kind": "insert",                       +
+                         "schema": "public",                     +
+                         "table": "table_with_pk",               +
+                         "columnvalues": [2, "a", "b"]           +
+                 }
+         ]                                                       +
+ }
+ {                                                               +
+         "change": [
+                 {                                               +
+                         "kind": "update",                       +
+                         "schema": "public",                     +
+                         "table": "table_with_pk",               +
+                         "columnvalues": [2, "A", "b"],          +
+                         "oldkeys": {                            +
+                                 "keynames": ["i", "a"],         +
+                                 "keytypes": ["int4", "text"],   +
+                                 "keyvalues": [2, "a"]           +
+                         }                                       +
+                 }
+         ]                                                       +
+ }
+ {                                                               +
+         "change": [
+                 {                                               +
+                         "kind": "update",                       +
+                         "schema": "public",                     +
+                         "table": "table_with_pk",               +
+                         "columnvalues": [2, "A", "B"],          +
+                         "oldkeys": {                            +
+                                 "keyvalues": [2, "A"]           +
+                         }                                       +
+                 }
+         ]                                                       +
+ }
+ {                                                               +
+         "change": [
+                 {                                               +
+                         "kind": "delete",                       +
+                         "schema": "public",                     +
+                         "table": "table_with_pk",               +
+                         "oldkeys": {                            +
+                                 "keyvalues": [1, "a"]           +
+                         }                                       +
+                 }
+         ]                                                       +
+ }
+(15 rows)
+
+-- Schema repeated on new plugin chunk
+insert into table_with_pk values (3, 'a', 'b');
+insert into table_with_pk values (4, 'a', 'b');
+update table_with_pk set a = 'A' where i = 4;
+update table_with_pk set b = 'B' where i = 4;
+delete from table_with_pk where i = 3;
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'include-xids', '0', 'pretty-print', '1', 'skip-empty-xacts', '1');
+                               data                               
+------------------------------------------------------------------
+ {                                                               +
+         "change": [
+                 {                                               +
+                         "kind": "insert",                       +
+                         "schema": "public",                     +
+                         "table": "table_with_pk",               +
+                         "columnnames": ["i", "a", "b"],         +
+                         "columntypes": ["int4", "text", "text"],+
+                         "columnvalues": [3, "a", "b"]           +
+                 }
+         ]                                                       +
+ }
+ {                                                               +
+         "change": [
+                 {                                               +
+                         "kind": "insert",                       +
+                         "schema": "public",                     +
+                         "table": "table_with_pk",               +
+                         "columnvalues": [4, "a", "b"]           +
+                 }
+         ]                                                       +
+ }
+ {                                                               +
+         "change": [
+                 {                                               +
+                         "kind": "update",                       +
+                         "schema": "public",                     +
+                         "table": "table_with_pk",               +
+                         "columnvalues": [4, "A", "b"],          +
+                         "oldkeys": {                            +
+                                 "keynames": ["i", "a"],         +
+                                 "keytypes": ["int4", "text"],   +
+                                 "keyvalues": [4, "a"]           +
+                         }                                       +
+                 }
+         ]                                                       +
+ }
+ {                                                               +
+         "change": [
+                 {                                               +
+                         "kind": "update",                       +
+                         "schema": "public",                     +
+                         "table": "table_with_pk",               +
+                         "columnvalues": [4, "A", "B"],          +
+                         "oldkeys": {                            +
+                                 "keyvalues": [4, "A"]           +
+                         }                                       +
+                 }
+         ]                                                       +
+ }
+ {                                                               +
+         "change": [
+                 {                                               +
+                         "kind": "delete",                       +
+                         "schema": "public",                     +
+                         "table": "table_with_pk",               +
+                         "oldkeys": {                            +
+                                 "keyvalues": [3, "a"]           +
+                         }                                       +
+                 }
+         ]                                                       +
+ }
+(15 rows)
+
+-- Schema change detected before new chunk
+alter table table_with_pk add c text;
+insert into table_with_pk values (5, 'a', 'b', 'c');
+insert into table_with_pk values (6, 'a', 'b', 'c');
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'include-xids', '0', 'pretty-print', '1', 'skip-empty-xacts', '1');
+                                   data                                   
+--------------------------------------------------------------------------
+ {                                                                       +
+         "change": [
+                 {                                                       +
+                         "kind": "insert",                               +
+                         "schema": "public",                             +
+                         "table": "table_with_pk",                       +
+                         "columnnames": ["i", "a", "b", "c"],            +
+                         "columntypes": ["int4", "text", "text", "text"],+
+                         "columnvalues": [5, "a", "b", "c"]              +
+                 }
+         ]                                                               +
+ }
+ {                                                                       +
+         "change": [
+                 {                                                       +
+                         "kind": "insert",                               +
+                         "schema": "public",                             +
+                         "table": "table_with_pk",                       +
+                         "columnvalues": [6, "a", "b", "c"]              +
+                 }
+         ]                                                               +
+ }
+(6 rows)
+
+-- Schema change detected within a new chunk
+insert into table_with_pk values (7, 'a', 'b', 'c');
+insert into table_with_pk values (8, 'a', 'b', 'c');
+alter table table_with_pk add d text;
+insert into table_with_pk values (9, 'a', 'b', 'c', 'd');
+insert into table_with_pk values (10, 'a', 'b', 'c', 'd');
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'include-xids', '0', 'pretty-print', '1', 'skip-empty-xacts', '1');
+                                       data                                       
+----------------------------------------------------------------------------------
+ {                                                                               +
+         "change": [
+                 {                                                               +
+                         "kind": "insert",                                       +
+                         "schema": "public",                                     +
+                         "table": "table_with_pk",                               +
+                         "columnnames": ["i", "a", "b", "c"],                    +
+                         "columntypes": ["int4", "text", "text", "text"],        +
+                         "columnvalues": [7, "a", "b", "c"]                      +
+                 }
+         ]                                                                       +
+ }
+ {                                                                               +
+         "change": [
+                 {                                                               +
+                         "kind": "insert",                                       +
+                         "schema": "public",                                     +
+                         "table": "table_with_pk",                               +
+                         "columnvalues": [8, "a", "b", "c"]                      +
+                 }
+         ]                                                                       +
+ }
+ {                                                                               +
+         "change": [
+                 {                                                               +
+                         "kind": "insert",                                       +
+                         "schema": "public",                                     +
+                         "table": "table_with_pk",                               +
+                         "columnnames": ["i", "a", "b", "c", "d"],               +
+                         "columntypes": ["int4", "text", "text", "text", "text"],+
+                         "columnvalues": [9, "a", "b", "c", "d"]                 +
+                 }
+         ]                                                                       +
+ }
+ {                                                                               +
+         "change": [
+                 {                                                               +
+                         "kind": "insert",                                       +
+                         "schema": "public",                                     +
+                         "table": "table_with_pk",                               +
+                         "columnvalues": [10, "a", "b", "c", "d"]                +
+                 }
+         ]                                                                       +
+ }
+(12 rows)
+
+-- Schema change detected within a transaction
+begin;
+insert into table_with_pk values (11, 'a', 'b', 'c', 'd');
+insert into table_with_pk values (12, 'a', 'b', 'c', 'd');
+alter table table_with_pk drop d;
+insert into table_with_pk values (13, 'a', 'b', 'c');
+insert into table_with_pk values (14, 'a', 'b', 'c');
+commit;
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'include-xids', '0', 'pretty-print', '1', 'skip-empty-xacts', '1');
+                                       data                                       
+----------------------------------------------------------------------------------
+ {                                                                               +
+         "change": [
+                 {                                                               +
+                         "kind": "insert",                                       +
+                         "schema": "public",                                     +
+                         "table": "table_with_pk",                               +
+                         "columnnames": ["i", "a", "b", "c", "d"],               +
+                         "columntypes": ["int4", "text", "text", "text", "text"],+
+                         "columnvalues": [11, "a", "b", "c", "d"]                +
+                 }
+                 ,{                                                              +
+                         "kind": "insert",                                       +
+                         "schema": "public",                                     +
+                         "table": "table_with_pk",                               +
+                         "columnvalues": [12, "a", "b", "c", "d"]                +
+                 }
+                 ,{                                                              +
+                         "kind": "insert",                                       +
+                         "schema": "public",                                     +
+                         "table": "table_with_pk",                               +
+                         "columnnames": ["i", "a", "b", "c"],                    +
+                         "columntypes": ["int4", "text", "text", "text"],        +
+                         "columnvalues": [13, "a", "b", "c"]                     +
+                 }
+                 ,{                                                              +
+                         "kind": "insert",                                       +
+                         "schema": "public",                                     +
+                         "table": "table_with_pk",                               +
+                         "columnvalues": [14, "a", "b", "c"]                     +
+                 }
+         ]                                                                       +
+ }
+(6 rows)
+
+-- Change to the pkey
+begin;
+insert into table_with_pk values (15, 'a', 'b', 'c');
+update table_with_pk set a = 'A' where i = 15;
+delete from table_with_pk where i = 15;
+alter table table_with_pk drop a;
+alter table table_with_pk add primary key (i);
+insert into table_with_pk values (16, 'b', 'c');
+update table_with_pk set b = 'B' where i = 16;
+delete from table_with_pk where i = 16;
+commit;
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'include-xids', '0', 'pretty-print', '1', 'skip-empty-xacts', '1');
+                                   data                                   
+--------------------------------------------------------------------------
+ {                                                                       +
+         "change": [
+                 {                                                       +
+                         "kind": "insert",                               +
+                         "schema": "public",                             +
+                         "table": "table_with_pk",                       +
+                         "columnnames": ["i", "a", "b", "c"],            +
+                         "columntypes": ["int4", "text", "text", "text"],+
+                         "columnvalues": [15, "a", "b", "c"]             +
+                 }
+                 ,{                                                      +
+                         "kind": "update",                               +
+                         "schema": "public",                             +
+                         "table": "table_with_pk",                       +
+                         "columnvalues": [15, "A", "b", "c"],            +
+                         "oldkeys": {                                    +
+                                 "keynames": ["i", "a"],                 +
+                                 "keytypes": ["int4", "text"],           +
+                                 "keyvalues": [15, "a"]                  +
+                         }                                               +
+                 }
+                 ,{                                                      +
+                         "kind": "delete",                               +
+                         "schema": "public",                             +
+                         "table": "table_with_pk",                       +
+                         "oldkeys": {                                    +
+                                 "keyvalues": [15, "A"]                  +
+                         }                                               +
+                 }
+                 ,{                                                      +
+                         "kind": "insert",                               +
+                         "schema": "public",                             +
+                         "table": "table_with_pk",                       +
+                         "columnnames": ["i", "b", "c"],                 +
+                         "columntypes": ["int4", "text", "text"],        +
+                         "columnvalues": [16, "b", "c"]                  +
+                 }
+                 ,{                                                      +
+                         "kind": "update",                               +
+                         "schema": "public",                             +
+                         "table": "table_with_pk",                       +
+                         "columnvalues": [16, "B", "c"],                 +
+                         "oldkeys": {                                    +
+                                 "keynames": ["i"],                      +
+                                 "keytypes": ["int4"],                   +
+                                 "keyvalues": [16]                       +
+                         }                                               +
+                 }
+                 ,{                                                      +
+                         "kind": "delete",                               +
+                         "schema": "public",                             +
+                         "table": "table_with_pk",                       +
+                         "oldkeys": {                                    +
+                                 "keyvalues": [16]                       +
+                         }                                               +
+                 }
+         ]                                                               +
+ }
+(8 rows)
+
+-- Schema omitted on table repeated
+insert into table_without_pk values (1, 'a', 'b');
+insert into table_without_pk values (2, 'a', 'b');
+update table_without_pk set a = 'A' where i = 2;
+update table_without_pk set b = 'B' where i = 2;
+delete from table_without_pk where i = 1;
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'include-xids', '0', 'pretty-print', '1', 'skip-empty-xacts', '1');
+WARNING:  table "table_without_pk" without primary key or replica identity is nothing
+WARNING:  table "table_without_pk" without primary key or replica identity is nothing
+WARNING:  table "table_without_pk" without primary key or replica identity is nothing
+                               data                               
+------------------------------------------------------------------
+ {                                                               +
+         "change": [
+                 {                                               +
+                         "kind": "insert",                       +
+                         "schema": "public",                     +
+                         "table": "table_without_pk",            +
+                         "columnnames": ["i", "a", "b"],         +
+                         "columntypes": ["int4", "text", "text"],+
+                         "columnvalues": [1, "a", "b"]           +
+                 }
+         ]                                                       +
+ }
+ {                                                               +
+         "change": [
+                 {                                               +
+                         "kind": "insert",                       +
+                         "schema": "public",                     +
+                         "table": "table_without_pk",            +
+                         "columnvalues": [2, "a", "b"]           +
+                 }
+         ]                                                       +
+ }
+(6 rows)
+
+-- That's fine: let's do replica
+alter table table_without_pk replica identity full;
+-- Schema repeated on new plugin chunk
+insert into table_without_pk values (3, 'a', 'b');
+insert into table_without_pk values (4, 'a', 'b');
+update table_without_pk set a = 'A' where i = 4;
+update table_without_pk set b = 'B' where i = 4;
+delete from table_without_pk where i = 3;
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'include-xids', '0', 'pretty-print', '1', 'skip-empty-xacts', '1');
+                                 data                                  
+-----------------------------------------------------------------------
+ {                                                                    +
+         "change": [
+                 {                                                    +
+                         "kind": "insert",                            +
+                         "schema": "public",                          +
+                         "table": "table_without_pk",                 +
+                         "columnnames": ["i", "a", "b"],              +
+                         "columntypes": ["int4", "text", "text"],     +
+                         "columnvalues": [3, "a", "b"]                +
+                 }
+         ]                                                            +
+ }
+ {                                                                    +
+         "change": [
+                 {                                                    +
+                         "kind": "insert",                            +
+                         "schema": "public",                          +
+                         "table": "table_without_pk",                 +
+                         "columnvalues": [4, "a", "b"]                +
+                 }
+         ]                                                            +
+ }
+ {                                                                    +
+         "change": [
+                 {                                                    +
+                         "kind": "update",                            +
+                         "schema": "public",                          +
+                         "table": "table_without_pk",                 +
+                         "columnvalues": [4, "A", "b"],               +
+                         "oldkeys": {                                 +
+                                 "keynames": ["i", "a", "b"],         +
+                                 "keytypes": ["int4", "text", "text"],+
+                                 "keyvalues": [4, "a", "b"]           +
+                         }                                            +
+                 }
+         ]                                                            +
+ }
+ {                                                                    +
+         "change": [
+                 {                                                    +
+                         "kind": "update",                            +
+                         "schema": "public",                          +
+                         "table": "table_without_pk",                 +
+                         "columnvalues": [4, "A", "B"],               +
+                         "oldkeys": {                                 +
+                                 "keyvalues": [4, "A", "b"]           +
+                         }                                            +
+                 }
+         ]                                                            +
+ }
+ {                                                                    +
+         "change": [
+                 {                                                    +
+                         "kind": "delete",                            +
+                         "schema": "public",                          +
+                         "table": "table_without_pk",                 +
+                         "oldkeys": {                                 +
+                                 "keyvalues": [3, "a", "b"]           +
+                         }                                            +
+                 }
+         ]                                                            +
+ }
+(15 rows)
+
+-- Schema change detected before new chunk
+alter table table_without_pk add c text;
+insert into table_without_pk values (5, 'a', 'b', 'c');
+insert into table_without_pk values (6, 'a', 'b', 'c');
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'include-xids', '0', 'pretty-print', '1', 'skip-empty-xacts', '1');
+                                   data                                   
+--------------------------------------------------------------------------
+ {                                                                       +
+         "change": [
+                 {                                                       +
+                         "kind": "insert",                               +
+                         "schema": "public",                             +
+                         "table": "table_without_pk",                    +
+                         "columnnames": ["i", "a", "b", "c"],            +
+                         "columntypes": ["int4", "text", "text", "text"],+
+                         "columnvalues": [5, "a", "b", "c"]              +
+                 }
+         ]                                                               +
+ }
+ {                                                                       +
+         "change": [
+                 {                                                       +
+                         "kind": "insert",                               +
+                         "schema": "public",                             +
+                         "table": "table_without_pk",                    +
+                         "columnvalues": [6, "a", "b", "c"]              +
+                 }
+         ]                                                               +
+ }
+(6 rows)
+
+-- Schema change detected within a new chunk
+insert into table_without_pk values (7, 'a', 'b', 'c');
+insert into table_without_pk values (8, 'a', 'b', 'c');
+alter table table_without_pk add d text;
+insert into table_without_pk values (9, 'a', 'b', 'c', 'd');
+insert into table_without_pk values (10, 'a', 'b', 'c', 'd');
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'include-xids', '0', 'pretty-print', '1', 'skip-empty-xacts', '1');
+                                       data                                       
+----------------------------------------------------------------------------------
+ {                                                                               +
+         "change": [
+                 {                                                               +
+                         "kind": "insert",                                       +
+                         "schema": "public",                                     +
+                         "table": "table_without_pk",                            +
+                         "columnnames": ["i", "a", "b", "c"],                    +
+                         "columntypes": ["int4", "text", "text", "text"],        +
+                         "columnvalues": [7, "a", "b", "c"]                      +
+                 }
+         ]                                                                       +
+ }
+ {                                                                               +
+         "change": [
+                 {                                                               +
+                         "kind": "insert",                                       +
+                         "schema": "public",                                     +
+                         "table": "table_without_pk",                            +
+                         "columnvalues": [8, "a", "b", "c"]                      +
+                 }
+         ]                                                                       +
+ }
+ {                                                                               +
+         "change": [
+                 {                                                               +
+                         "kind": "insert",                                       +
+                         "schema": "public",                                     +
+                         "table": "table_without_pk",                            +
+                         "columnnames": ["i", "a", "b", "c", "d"],               +
+                         "columntypes": ["int4", "text", "text", "text", "text"],+
+                         "columnvalues": [9, "a", "b", "c", "d"]                 +
+                 }
+         ]                                                                       +
+ }
+ {                                                                               +
+         "change": [
+                 {                                                               +
+                         "kind": "insert",                                       +
+                         "schema": "public",                                     +
+                         "table": "table_without_pk",                            +
+                         "columnvalues": [10, "a", "b", "c", "d"]                +
+                 }
+         ]                                                                       +
+ }
+(12 rows)
+
+-- Schema change detected within a transaction
+begin;
+insert into table_without_pk values (11, 'a', 'b', 'c', 'd');
+insert into table_without_pk values (12, 'a', 'b', 'c', 'd');
+alter table table_without_pk drop d;
+insert into table_without_pk values (13, 'a', 'b', 'c');
+insert into table_without_pk values (14, 'a', 'b', 'c');
+commit;
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'include-xids', '0', 'pretty-print', '1', 'skip-empty-xacts', '1');
+                                       data                                       
+----------------------------------------------------------------------------------
+ {                                                                               +
+         "change": [
+                 {                                                               +
+                         "kind": "insert",                                       +
+                         "schema": "public",                                     +
+                         "table": "table_without_pk",                            +
+                         "columnnames": ["i", "a", "b", "c", "d"],               +
+                         "columntypes": ["int4", "text", "text", "text", "text"],+
+                         "columnvalues": [11, "a", "b", "c", "d"]                +
+                 }
+                 ,{                                                              +
+                         "kind": "insert",                                       +
+                         "schema": "public",                                     +
+                         "table": "table_without_pk",                            +
+                         "columnvalues": [12, "a", "b", "c", "d"]                +
+                 }
+                 ,{                                                              +
+                         "kind": "insert",                                       +
+                         "schema": "public",                                     +
+                         "table": "table_without_pk",                            +
+                         "columnnames": ["i", "a", "b", "c"],                    +
+                         "columntypes": ["int4", "text", "text", "text"],        +
+                         "columnvalues": [13, "a", "b", "c"]                     +
+                 }
+                 ,{                                                              +
+                         "kind": "insert",                                       +
+                         "schema": "public",                                     +
+                         "table": "table_without_pk",                            +
+                         "columnvalues": [14, "a", "b", "c"]                     +
+                 }
+         ]                                                                       +
+ }
+(6 rows)
+
+SELECT 'stop' FROM pg_drop_replication_slot('regression_slot');
+ ?column? 
+----------
+ stop
+(1 row)
+
