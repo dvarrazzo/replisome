@@ -13,6 +13,8 @@ typedef struct
 	bool include;
 	bool exclude;
 
+	bool names_emitted;         /* true if table names have been emitted */
+	bool key_emitted;           /* true if table key names have been emitted */
 } JsonRelationEntry;
 
 

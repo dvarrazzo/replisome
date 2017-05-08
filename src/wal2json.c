@@ -398,7 +398,7 @@ quote_escape_json(StringInfo buf, const char *val)
  * hasreplident: does this tuple has an associated replica identity?
  */
 static void
-tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tuple, TupleDesc indexdesc, bool replident, bool hasreplident)
+tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tuple, TupleDesc indexdesc, bool replident, bool hasreplident, bool include_schema)
 {
 	JsonDecodingData	*data;
 	int					natt;
@@ -408,11 +408,15 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 	StringInfoData		colvalues;
 	char				*comma = "";
 
-	initStringInfo(&colnames);
-	initStringInfo(&coltypes);
-	initStringInfo(&colvalues);
+	bool				include_types;
 
 	data = ctx->output_plugin_private;
+	include_types = include_schema && data->include_types;
+
+	initStringInfo(&colnames);
+	if (include_types)
+		initStringInfo(&coltypes);
+	initStringInfo(&colvalues);
 
 	/*
 	 * If replident is true, it will output info about replica identity. In this
@@ -424,15 +428,19 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 		if (data->pretty_print)
 		{
 			appendStringInfoString(&colnames, "\t\t\t\"oldkeys\": {\n");
-			appendStringInfoString(&colnames, "\t\t\t\t\"keynames\": [");
-			appendStringInfoString(&coltypes, "\t\t\t\t\"keytypes\": [");
+			if (include_schema)
+				appendStringInfoString(&colnames, "\t\t\t\t\"keynames\": [");
+			if (include_types)
+				appendStringInfoString(&coltypes, "\t\t\t\t\"keytypes\": [");
 			appendStringInfoString(&colvalues, "\t\t\t\t\"keyvalues\": [");
 		}
 		else
 		{
 			appendStringInfoString(&colnames, "\"oldkeys\":{");
-			appendStringInfoString(&colnames, "\"keynames\":[");
-			appendStringInfoString(&coltypes, "\"keytypes\":[");
+			if (include_schema)
+				appendStringInfoString(&colnames, "\"keynames\":[");
+			if (include_types)
+				appendStringInfoString(&coltypes, "\"keytypes\":[");
 			appendStringInfoString(&colvalues, "\"keyvalues\":[");
 		}
 	}
@@ -440,14 +448,18 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 	{
 		if (data->pretty_print)
 		{
-			appendStringInfoString(&colnames, "\t\t\t\"columnnames\": [");
-			appendStringInfoString(&coltypes, "\t\t\t\"columntypes\": [");
+			if (include_schema)
+				appendStringInfoString(&colnames, "\t\t\t\"columnnames\": [");
+			if (include_types)
+				appendStringInfoString(&coltypes, "\t\t\t\"columntypes\": [");
 			appendStringInfoString(&colvalues, "\t\t\t\"columnvalues\": [");
 		}
 		else
 		{
-			appendStringInfoString(&colnames, "\"columnnames\":[");
-			appendStringInfoString(&coltypes, "\"columntypes\":[");
+			if (include_schema)
+				appendStringInfoString(&colnames, "\"columnnames\":[");
+			if (include_types)
+				appendStringInfoString(&coltypes, "\"columntypes\":[");
 			appendStringInfoString(&colvalues, "\"columnvalues\":[");
 		}
 	}
@@ -517,9 +529,10 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 		}
 
 		/* Accumulate each column info */
-		appendStringInfo(&colnames, "%s\"%s\"", comma, NameStr(attr->attname));
+		if (include_schema)
+			appendStringInfo(&colnames, "%s\"%s\"", comma, NameStr(attr->attname));
 
-		if (data->include_types)
+		if (include_types)
 			appendStringInfo(&coltypes, "%s\"%s\"", comma, NameStr(type_form->typname));
 
 		ReleaseSysCache(type_tuple);
@@ -594,16 +607,18 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 	{
 		if (data->pretty_print)
 		{
-			appendStringInfoString(&colnames, "],\n");
-			if (data->include_types)
+			if (include_schema)
+				appendStringInfoString(&colnames, "],\n");
+			if (include_types)
 				appendStringInfoString(&coltypes, "],\n");
 			appendStringInfoString(&colvalues, "]\n");
 			appendStringInfoString(&colvalues, "\t\t\t}\n");
 		}
 		else
 		{
-			appendStringInfoString(&colnames, "],");
-			if (data->include_types)
+			if (include_schema)
+				appendStringInfoString(&colnames, "],");
+			if (include_types)
 				appendStringInfoString(&coltypes, "],");
 			appendStringInfoChar(&colvalues, ']');
 			appendStringInfoChar(&colvalues, '}');
@@ -613,8 +628,9 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 	{
 		if (data->pretty_print)
 		{
-			appendStringInfoString(&colnames, "],\n");
-			if (data->include_types)
+			if (include_schema)
+				appendStringInfoString(&colnames, "],\n");
+			if (include_types)
 				appendStringInfoString(&coltypes, "],\n");
 			if (hasreplident)
 				appendStringInfoString(&colvalues, "],\n");
@@ -623,8 +639,9 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 		}
 		else
 		{
-			appendStringInfoString(&colnames, "],");
-			if (data->include_types)
+			if (include_schema)
+				appendStringInfoString(&colnames, "],");
+			if (include_types)
 				appendStringInfoString(&coltypes, "],");
 			if (hasreplident)
 				appendStringInfoString(&colvalues, "],");
@@ -635,28 +652,29 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 
 	/* Print data */
 	appendStringInfoString(ctx->out, colnames.data);
-	if (data->include_types)
+	if (include_types)
 		appendStringInfoString(ctx->out, coltypes.data);
 	appendStringInfoString(ctx->out, colvalues.data);
 
 	pfree(colnames.data);
-	pfree(coltypes.data);
+	if (include_types)
+		pfree(coltypes.data);
 	pfree(colvalues.data);
 }
 
 /* Print columns information */
 static void
-columns_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tuple, bool hasreplident)
+columns_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tuple, bool hasreplident, bool include_schema)
 {
-	tuple_to_stringinfo(ctx, tupdesc, tuple, NULL, false, hasreplident);
+	tuple_to_stringinfo(ctx, tupdesc, tuple, NULL, false, hasreplident, include_schema);
 }
 
 /* Print replica identity information */
 static void
-identity_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tuple, TupleDesc indexdesc)
+identity_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tuple, TupleDesc indexdesc, bool include_schema)
 {
-	/* Last parameter does not matter */
-	tuple_to_stringinfo(ctx, tupdesc, tuple, indexdesc, true, false);
+	/* hasreplident=false parameter does not matter */
+	tuple_to_stringinfo(ctx, tupdesc, tuple, indexdesc, true, false, include_schema);
 }
 
 /* Callback for individual changed tuples */
@@ -828,11 +846,13 @@ pg_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 	{
 		case REORDER_BUFFER_CHANGE_INSERT:
 			/* Print the new tuple */
-			columns_to_stringinfo(ctx, tupdesc, &change->data.tp.newtuple->tuple, false);
+			columns_to_stringinfo(ctx, tupdesc, &change->data.tp.newtuple->tuple, false, !entry->names_emitted);
+			entry->names_emitted = true;
 			break;
 		case REORDER_BUFFER_CHANGE_UPDATE:
 			/* Print the new tuple */
-			columns_to_stringinfo(ctx, tupdesc, &change->data.tp.newtuple->tuple, true);
+			columns_to_stringinfo(ctx, tupdesc, &change->data.tp.newtuple->tuple, true, !entry->names_emitted);
+			entry->names_emitted = true;
 
 			/*
 			 * The old tuple is available when:
@@ -851,39 +871,43 @@ pg_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 				if (indexrel != NULL)
 				{
 					indexdesc = RelationGetDescr(indexrel);
-					identity_to_stringinfo(ctx, tupdesc, &change->data.tp.newtuple->tuple, indexdesc);
+					identity_to_stringinfo(ctx, tupdesc, &change->data.tp.newtuple->tuple, indexdesc, !entry->key_emitted);
 					RelationClose(indexrel);
 				}
 				else
 				{
-					identity_to_stringinfo(ctx, tupdesc, &change->data.tp.newtuple->tuple, NULL);
+					identity_to_stringinfo(ctx, tupdesc, &change->data.tp.newtuple->tuple, NULL, !entry->key_emitted);
 				}
 			}
 			else
 			{
 				elog(DEBUG1, "old tuple is not null");
-				identity_to_stringinfo(ctx, tupdesc, &change->data.tp.oldtuple->tuple, NULL);
+				identity_to_stringinfo(ctx, tupdesc, &change->data.tp.oldtuple->tuple, NULL, !entry->key_emitted);
 			}
+			entry->key_emitted = true;
 			break;
+
 		case REORDER_BUFFER_CHANGE_DELETE:
 			/* Print the replica identity */
 			indexrel = RelationIdGetRelation(relation->rd_replidindex);
 			if (indexrel != NULL)
 			{
 				indexdesc = RelationGetDescr(indexrel);
-				identity_to_stringinfo(ctx, tupdesc, &change->data.tp.oldtuple->tuple, indexdesc);
+				identity_to_stringinfo(ctx, tupdesc, &change->data.tp.oldtuple->tuple, indexdesc, !entry->key_emitted);
 				RelationClose(indexrel);
 			}
 			else
 			{
-				identity_to_stringinfo(ctx, tupdesc, &change->data.tp.oldtuple->tuple, NULL);
+				identity_to_stringinfo(ctx, tupdesc, &change->data.tp.oldtuple->tuple, NULL, !entry->key_emitted);
 			}
+			entry->key_emitted = true;
 
 			if (change->data.tp.oldtuple == NULL)
 				elog(DEBUG1, "old tuple is null");
 			else
 				elog(DEBUG1, "old tuple is not null");
 			break;
+
 		default:
 			Assert(false);
 	}

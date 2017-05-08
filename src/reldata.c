@@ -43,6 +43,8 @@ reldata_enter(HTAB *reldata, Oid relid)
 		elog(DEBUG1, "entry for relation %u is new", relid);
 		entry->include = false;
 		entry->exclude = false;
+		entry->names_emitted = false;
+		entry->key_emitted = false;
 	}
 
 	return entry;
