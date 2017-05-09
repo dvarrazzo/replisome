@@ -1,4 +1,5 @@
 \set VERBOSITY terse
+\pset format unaligned
 -- predictability
 SET synchronous_commit = on;
 DROP TABLE IF EXISTS table_with_pk;
@@ -68,11 +69,9 @@ INSERT INTO table_with_pk (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) VALUES(2
 INSERT INTO table_without_pk (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) VALUES(2, 2, 3, 3.54, 876.563452345, 1.23, 'teste', 'testando', 'um texto longo', B'001110010101010', '2013-11-02 17:30:52', '2013-02-04', false, '{ "a": 123 }', 'Old Old Parr'::tsvector);
 INSERT INTO table_with_unique (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) VALUES(2, 2, 3, 3.54, 876.563452345, 1.23, 'teste', 'testando', 'um texto longo', B'001110010101010', '2013-11-02 17:30:52', '2013-02-04', false, '{ "a": 123 }', 'Old Old Parr'::tsvector);
 SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'replisome');
- ?column? 
-----------
- init
+?column?
+init
 (1 row)
-
 -- DELETE: no pk
 DELETE FROM table_without_pk WHERE b = 1;
 -- DELETE: pk
@@ -82,30 +81,28 @@ DELETE FROM table_with_unique WHERE b = 1;
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1', 'include-empty-xacts', '1');
 WARNING:  table "table_without_pk" without primary key or replica identity is nothing
 WARNING:  table "table_with_unique" without primary key or replica identity is nothing
-                             data                              
----------------------------------------------------------------
- {                                                            +
-         "change": [                                          +
-         ]                                                    +
- }
- {                                                            +
-         "change": [                                          +
-                 {                                            +
-                         "op": "D",                           +
-                         "schema": "public",                  +
-                         "table": "table_with_pk",            +
-                         "keynames": ["b", "c", "d"],         +
-                         "keytypes": ["int2", "int4", "int8"],+
-                         "oldkey": [1, 2, 3]                  +
-                 }                                            +
-         ]                                                    +
- }
- {                                                            +
-         "change": [                                          +
-         ]                                                    +
- }
+data
+{
+	"change": [
+	]
+}
+{
+	"change": [
+		{
+			"op": "D",
+			"schema": "public",
+			"table": "table_with_pk",
+			"keynames": ["b", "c", "d"],
+			"keytypes": ["int2", "int4", "int8"],
+			"oldkey": [1, 2, 3]
+		}
+	]
+}
+{
+	"change": [
+	]
+}
 (3 rows)
-
 -- Again, hiding empty xacts
 DELETE FROM table_without_pk WHERE b = 2;
 DELETE FROM table_with_pk WHERE b = 2;
@@ -113,25 +110,21 @@ DELETE FROM table_with_unique WHERE b = 2;
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1');
 WARNING:  table "table_without_pk" without primary key or replica identity is nothing
 WARNING:  table "table_with_unique" without primary key or replica identity is nothing
-                             data                              
----------------------------------------------------------------
- {                                                            +
-         "change": [                                          +
-                 {                                            +
-                         "op": "D",                           +
-                         "schema": "public",                  +
-                         "table": "table_with_pk",            +
-                         "keynames": ["b", "c", "d"],         +
-                         "keytypes": ["int2", "int4", "int8"],+
-                         "oldkey": [2, 2, 3]                  +
-                 }                                            +
-         ]                                                    +
- }
+data
+{
+	"change": [
+		{
+			"op": "D",
+			"schema": "public",
+			"table": "table_with_pk",
+			"keynames": ["b", "c", "d"],
+			"keytypes": ["int2", "int4", "int8"],
+			"oldkey": [2, 2, 3]
+		}
+	]
+}
 (1 row)
-
 SELECT 'stop' FROM pg_drop_replication_slot('regression_slot');
- ?column? 
-----------
- stop
+?column?
+stop
 (1 row)
-

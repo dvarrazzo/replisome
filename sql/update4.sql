@@ -1,4 +1,5 @@
 \set VERBOSITY terse
+\pset format unaligned
 
 -- predictability
 SET synchronous_commit = on;
