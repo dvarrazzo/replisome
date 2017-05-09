@@ -10,7 +10,11 @@
  *
  *-------------------------------------------------------------------------
  */
+
 #include "postgres.h"
+
+#include "wal2json.h"
+#include "reldata.h"
 
 #include "access/sysattr.h"
 
@@ -37,27 +41,6 @@ PG_MODULE_MAGIC;
 extern void		_PG_init(void);
 extern void		_PG_output_plugin_init(OutputPluginCallbacks *cb);
 
-typedef struct
-{
-	MemoryContext context;
-	bool		include_xids;		/* include transaction ids */
-	bool		include_timestamp;	/* include transaction timestamp */
-	bool		include_schemas;	/* qualify tables */
-	bool		include_types;		/* include data types */
-
-	bool		pretty_print;		/* pretty-print JSON? */
-	bool		write_in_chunks;	/* write in chunks? */
-
-	/*
-	 * LSN pointing to the end of commit record + 1 (txn->end_lsn)
-	 * It is useful for tools that wants a position to restart from.
-	 */
-	bool		include_lsn;		/* include LSNs */
-	bool		include_empty_xacts;	/* emit empty transactions too */
-
-	uint64		nr_changes;			/* # of passes in pg_decode_change() */
-									/* FIXME replace with txn->nentries */
-} JsonDecodingData;
 
 /* These must be available to pg_dlsym() */
 static void pg_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt, bool is_init);
@@ -92,7 +75,7 @@ _PG_output_plugin_init(OutputPluginCallbacks *cb)
 }
 
 /* Initialize this plugin */
-void
+static void
 pg_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt, bool is_init)
 {
 	ListCell	*option;
@@ -112,8 +95,11 @@ pg_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt, bool is
 	data->write_in_chunks = false;
 	data->include_lsn = false;
 	data->include_empty_xacts = false;
+	data->commands = NULL;
 
 	data->nr_changes = 0;
+
+	data->reldata = reldata_create();
 
 	ctx->output_plugin_private = data;
 
@@ -231,6 +217,14 @@ pg_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt, bool is
 						 errmsg("could not parse value \"%s\" for parameter \"%s\"",
 						 strVal(elem->arg), elem->defname)));
 		}
+		else if (strcmp(elem->defname, "include-table") == 0)
+		{
+			inc_parse_include_table(elem, &data->commands);
+		}
+		else if (strcmp(elem->defname, "exclude-table") == 0)
+		{
+			inc_parse_exclude_table(elem, &data->commands);
+		}
 		else
 		{
 			ereport(ERROR,
@@ -254,7 +248,10 @@ pg_decode_shutdown(LogicalDecodingContext *ctx)
 
 
 /* BEGIN callback */
-void
+static void output_begin(LogicalDecodingContext *ctx, JsonDecodingData *data,
+		ReorderBufferTXN *txn, bool last_write);
+
+static void
 pg_decode_begin_txn(LogicalDecodingContext *ctx, ReorderBufferTXN *txn)
 {
 	JsonDecodingData *data = ctx->output_plugin_private;
@@ -315,7 +312,7 @@ output_begin(LogicalDecodingContext *ctx, JsonDecodingData *data,
 }
 
 /* COMMIT callback */
-void
+static void
 pg_decode_commit_txn(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 					 XLogRecPtr commit_lsn)
 {
@@ -683,10 +680,28 @@ pg_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 
 	Relation	indexrel;
 	TupleDesc	indexdesc;
+	JsonRelationEntry *entry;
 
 	AssertVariableIsOfType(&pg_decode_change, LogicalDecodeChangeCB);
 
 	data = ctx->output_plugin_private;
+
+	/* Look up or insert a new entry in the cache */
+	entry = reldata_enter(data->reldata, relation->rd_id);
+
+	/* check if we have to emit this table */
+	if (entry->exclude) {
+		return;
+	}
+	else if (!entry->include) {
+		entry->include = inc_should_emit(data->commands, relation);
+		if (!entry->include)
+		{
+			entry->exclude = true;
+			return;
+		}
+	}
+
 	class_form = RelationGetForm(relation);
 	tupdesc = RelationGetDescr(relation);
 
