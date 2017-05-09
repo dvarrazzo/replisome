@@ -1,7 +1,7 @@
 \set VERBOSITY terse
 -- predictability
 SET synchronous_commit = on;
-SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'wal2json');
+SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'replisome');
  ?column? 
 ----------
  init

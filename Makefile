@@ -1,6 +1,6 @@
-MODULE_big = wal2json
+MODULE_big = replisome
 
-OBJS = src/wal2json.o src/includes.o src/reldata.o
+OBJS = src/replisome.o src/includes.o src/reldata.o
 
 REGRESS = cmdline insert1 update1 update2 update3 update4 delete1 delete2 \
 		  delete3 delete4 include repschema savepoint specialvalue toast bytea

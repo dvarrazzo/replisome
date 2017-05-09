@@ -1,5 +1,5 @@
-#ifndef _WAL2JSON_H_
-#define _WAL2JSON_H_
+#ifndef _REPLISOME_H_
+#define _REPLISOME_H_
 
 #include "postgres.h"
 

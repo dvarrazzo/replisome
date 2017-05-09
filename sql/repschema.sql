@@ -27,7 +27,7 @@ CREATE TABLE table_with_unique (
 	UNIQUE(i, a)
 );
 
-SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'wal2json');
+SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'replisome');
 
 -- Schema omitted on table repeated
 insert into table_with_pk values (1, 'a', 'b');

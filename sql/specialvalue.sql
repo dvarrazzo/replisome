@@ -5,7 +5,7 @@ SET synchronous_commit = on;
 
 DROP TABLE IF EXISTS xpto;
 
-SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'wal2json');
+SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'replisome');
 
 CREATE TABLE xpto (a SERIAL PRIMARY KEY, b bool, c varchar(60), d real);
 COMMIT;

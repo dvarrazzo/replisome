@@ -12,7 +12,7 @@ rand1		float8 DEFAULT random(),
 bincol		bytea
 );
 
-SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'wal2json');
+SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'replisome');
 
 INSERT INTO xpto (bincol) SELECT decode(string_agg(to_char(round(g.i * random()), 'FM0000'), ''), 'hex') FROM generate_series(500, 5000) g(i);
 UPDATE xpto SET rand1 = 123.456 WHERE id = 1;

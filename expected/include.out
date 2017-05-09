@@ -11,7 +11,7 @@ CREATE TABLE t1 (id int PRIMARY KEY);
 CREATE TABLE t2 (id int PRIMARY KEY);
 CREATE TABLE t3 (id int PRIMARY KEY);
 CREATE TABLE s1 (id int PRIMARY KEY);
-SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'wal2json');
+SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'replisome');
  ?column? 
 ----------
  init

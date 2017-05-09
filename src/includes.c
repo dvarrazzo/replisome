@@ -1,6 +1,6 @@
 #include "includes.h"
 
-#include "wal2json.h"
+#include "replisome.h"
 #include "reldata.h"
 
 #include "catalog/pg_collation.h"

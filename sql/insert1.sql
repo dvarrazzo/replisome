@@ -65,7 +65,7 @@ p	tsvector,
 UNIQUE(g, n)
 );
 
-SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'wal2json');
+SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'replisome');
 
 -- INSERT
 BEGIN;

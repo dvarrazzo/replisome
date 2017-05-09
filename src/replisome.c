@@ -1,19 +1,19 @@
 /*-------------------------------------------------------------------------
  *
- * wal2json.c
+ * replisome.c
  * 		JSON output plugin for changeset extraction
  *
  * Copyright (c) 2013-2017, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
- *		contrib/wal2json/wal2json.c
+ *		contrib/replisome/replisome.c
  *
  *-------------------------------------------------------------------------
  */
 
 #include "postgres.h"
 
-#include "wal2json.h"
+#include "replisome.h"
 #include "reldata.h"
 
 #include "access/sysattr.h"
@@ -44,13 +44,13 @@ extern void		_PG_output_plugin_init(OutputPluginCallbacks *cb);
 
 
 /* These must be available to pg_dlsym() */
-static void pg_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt, bool is_init);
-static void pg_decode_shutdown(LogicalDecodingContext *ctx);
-static void pg_decode_begin_txn(LogicalDecodingContext *ctx,
+static void rs_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt, bool is_init);
+static void rs_decode_shutdown(LogicalDecodingContext *ctx);
+static void rs_decode_begin_txn(LogicalDecodingContext *ctx,
 					ReorderBufferTXN *txn);
-static void pg_decode_commit_txn(LogicalDecodingContext *ctx,
+static void rs_decode_commit_txn(LogicalDecodingContext *ctx,
 					 ReorderBufferTXN *txn, XLogRecPtr commit_lsn);
-static void pg_decode_change(LogicalDecodingContext *ctx,
+static void rs_decode_change(LogicalDecodingContext *ctx,
 				 ReorderBufferTXN *txn, Relation rel,
 				 ReorderBufferChange *change);
 
@@ -70,16 +70,16 @@ _PG_output_plugin_init(OutputPluginCallbacks *cb)
 {
 	AssertVariableIsOfType(&_PG_output_plugin_init, LogicalOutputPluginInit);
 
-	cb->startup_cb = pg_decode_startup;
-	cb->begin_cb = pg_decode_begin_txn;
-	cb->change_cb = pg_decode_change;
-	cb->commit_cb = pg_decode_commit_txn;
-	cb->shutdown_cb = pg_decode_shutdown;
+	cb->startup_cb = rs_decode_startup;
+	cb->begin_cb = rs_decode_begin_txn;
+	cb->change_cb = rs_decode_change;
+	cb->commit_cb = rs_decode_commit_txn;
+	cb->shutdown_cb = rs_decode_shutdown;
 }
 
 /* Initialize this plugin */
 static void
-pg_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt, bool is_init)
+rs_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt, bool is_init)
 {
 	ListCell	*option;
 	JsonDecodingData *data;
@@ -241,7 +241,7 @@ pg_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt, bool is
 
 /* cleanup this plugin's resources */
 static void
-pg_decode_shutdown(LogicalDecodingContext *ctx)
+rs_decode_shutdown(LogicalDecodingContext *ctx)
 {
 	JsonDecodingData *data = ctx->output_plugin_private;
 
@@ -255,7 +255,7 @@ static void output_begin(LogicalDecodingContext *ctx, JsonDecodingData *data,
 		ReorderBufferTXN *txn, bool last_write);
 
 static void
-pg_decode_begin_txn(LogicalDecodingContext *ctx, ReorderBufferTXN *txn)
+rs_decode_begin_txn(LogicalDecodingContext *ctx, ReorderBufferTXN *txn)
 {
 	JsonDecodingData *data = ctx->output_plugin_private;
 
@@ -318,7 +318,7 @@ output_begin(LogicalDecodingContext *ctx, JsonDecodingData *data,
 
 /* COMMIT callback */
 static void
-pg_decode_commit_txn(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
+rs_decode_commit_txn(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 					 XLogRecPtr commit_lsn)
 {
 	JsonDecodingData *data = ctx->output_plugin_private;
@@ -691,7 +691,7 @@ identity_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple
 
 /* Callback for individual changed tuples */
 void
-pg_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
+rs_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 				 Relation relation, ReorderBufferChange *change)
 {
 	JsonDecodingData *data;
@@ -703,7 +703,7 @@ pg_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 	TupleDesc	indexdesc;
 	JsonRelationEntry *entry;
 
-	AssertVariableIsOfType(&pg_decode_change, LogicalDecodeChangeCB);
+	AssertVariableIsOfType(&rs_decode_change, LogicalDecodeChangeCB);
 
 	data = ctx->output_plugin_private;
 

@@ -3,7 +3,7 @@
 -- predictability
 SET synchronous_commit = on;
 
-SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'wal2json');
+SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'replisome');
 
 -- Unknown option
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL,
