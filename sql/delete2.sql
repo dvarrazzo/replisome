@@ -86,7 +86,7 @@ ALTER TABLE table_with_unique REPLICA IDENTITY NOTHING;
 DELETE FROM table_with_unique WHERE b = 1;
 ALTER TABLE table_with_unique REPLICA IDENTITY DEFAULT;
 
-SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1', 'skip-empty-xacts', '0');
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1', 'include-empty-xacts', '1');
 
 -- Test skipping empty xacts
 ALTER TABLE table_with_pk REPLICA IDENTITY NOTHING;
