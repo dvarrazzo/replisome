@@ -748,21 +748,21 @@ pg_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 	{
 		case REORDER_BUFFER_CHANGE_INSERT:
 			if (data->pretty_print)
-				appendStringInfoString(ctx->out, "\t\t\t\"kind\": \"insert\",\n");
+				appendStringInfoString(ctx->out, "\t\t\t\"op\": \"insert\",\n");
 			else
-				appendStringInfoString(ctx->out, "\"kind\":\"insert\",");
+				appendStringInfoString(ctx->out, "\"op\":\"insert\",");
 			break;
 		case REORDER_BUFFER_CHANGE_UPDATE:
 			if(data->pretty_print)
-				appendStringInfoString(ctx->out, "\t\t\t\"kind\": \"update\",\n");
+				appendStringInfoString(ctx->out, "\t\t\t\"op\": \"update\",\n");
 			else
-				appendStringInfoString(ctx->out, "\"kind\":\"update\",");
+				appendStringInfoString(ctx->out, "\"op\":\"update\",");
 			break;
 		case REORDER_BUFFER_CHANGE_DELETE:
 			if (data->pretty_print)
-				appendStringInfoString(ctx->out, "\t\t\t\"kind\": \"delete\",\n");
+				appendStringInfoString(ctx->out, "\t\t\t\"op\": \"delete\",\n");
 			else
-				appendStringInfoString(ctx->out, "\"kind\":\"delete\",");
+				appendStringInfoString(ctx->out, "\"op\":\"delete\",");
 			break;
 		default:
 			Assert(false);

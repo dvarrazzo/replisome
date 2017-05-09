@@ -88,7 +88,7 @@ WARNING:  table "table_with_unique" without primary key or replica identity is n
  {                                                                    +
          "change": [
                  {                                                    +
-                         "kind": "delete",                            +
+                         "op": "delete",                              +
                          "schema": "public",                          +
                          "table": "table_with_pk",                    +
                          "oldkeys": {                                 +

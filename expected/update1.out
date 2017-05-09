@@ -90,7 +90,7 @@ WARNING:  table "table_with_unique" without primary key or replica identity is n
  {                                                                                                                                                                                                                             +
          "change": [
                  {                                                                                                                                                                                                             +
-                         "kind": "update",                                                                                                                                                                                     +
+                         "op": "update",                                                                                                                                                                                       +
                          "schema": "public",                                                                                                                                                                                   +
                          "table": "table_with_pk",                                                                                                                                                                             +
                          "columnnames": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p"],                                                                                                      +
@@ -107,7 +107,7 @@ WARNING:  table "table_with_unique" without primary key or replica identity is n
  {                                                                                                                                                                                                                             +
          "change": [
                  {                                                                                                                                                                                                             +
-                         "kind": "update",                                                                                                                                                                                     +
+                         "op": "update",                                                                                                                                                                                       +
                          "schema": "public",                                                                                                                                                                                   +
                          "table": "table_with_pk",                                                                                                                                                                             +
                          "columnnames": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p"],                                                                                                      +
