@@ -25,8 +25,8 @@ UNIQUE(g, n)
 -- INSERT
 INSERT INTO table_with_unique (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) VALUES(1, 2, 3, 3.54, 876.563452345, 1.23, 'teste', 'testando', 'um texto longo', B'001110010101010', '2013-11-02 17:30:52', '2013-02-04', false, '{ "a": 123 }', 'Old Old Parr'::tsvector);
 INSERT INTO table_with_unique (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) VALUES(4, 5, 6, 3.54, 876.563452345, 4.56, 'teste', 'testando', 'um texto longo', B'001110010101010', '2013-11-02 17:30:52', '2013-02-04', true, '{ "a": 123 }', 'Old Old Parr'::tsvector);
-SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'replisome');
-?column?
+SELECT slot_create();
+slot_create
 init
 (1 row)
 -- DELETE: REPLICA IDENTITY INDEX
@@ -34,7 +34,7 @@ ALTER TABLE table_with_unique REPLICA IDENTITY USING INDEX table_with_unique_g_n
 DELETE FROM table_with_unique WHERE b = 1;
 DELETE FROM table_with_unique WHERE n = true;
 ALTER TABLE table_with_unique REPLICA IDENTITY DEFAULT;
-SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1');
+SELECT data FROM slot_get();
 data
 {
 	"change": [
@@ -59,7 +59,7 @@ data
 	]
 }
 (2 rows)
-SELECT 'stop' FROM pg_drop_replication_slot('regression_slot');
-?column?
+SELECT slot_drop();
+slot_drop
 stop
 (1 row)

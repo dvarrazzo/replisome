@@ -15,7 +15,7 @@ toasted_col2	text,
 rand2 float8	DEFAULT random()
 );
 
-SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'replisome');
+SELECT slot_create();
 
 -- uncompressed external toast data
 INSERT INTO xpto (toasted_col1, toasted_col2) SELECT string_agg(g.i::text, ''), string_agg((g.i*2)::text, '') FROM generate_series(1, 2000) g(i);
@@ -30,5 +30,5 @@ UPDATE xpto SET rand1 = 123.456 WHERE id = 1;
 
 DELETE FROM xpto WHERE id = 1;
 
-SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1');
-SELECT 'stop' FROM pg_drop_replication_slot('regression_slot');
+SELECT data FROM slot_get();
+SELECT slot_drop();

@@ -6,7 +6,7 @@ SET synchronous_commit = on;
 
 DROP TABLE IF EXISTS xpto;
 
-SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'replisome');
+SELECT slot_create();
 
 CREATE TABLE xpto (a SERIAL PRIMARY KEY, b bool, c varchar(60), d real);
 COMMIT;
@@ -18,5 +18,5 @@ INSERT INTO xpto (b, c, d) VALUES(NULL, 'null', '-inf');
 INSERT INTO xpto (b, c, d) VALUES(TRUE, E'valid: '' " \\ / \b \f \n \r \t \u207F \u967F invalid: \\g \\k end', 123.456);
 COMMIT;
 
-SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1');
-SELECT 'stop' FROM pg_drop_replication_slot('regression_slot');
+SELECT data FROM slot_get();
+SELECT slot_drop();

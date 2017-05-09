@@ -13,7 +13,7 @@ CREATE TABLE t2 (id int PRIMARY KEY);
 CREATE TABLE t3 (id int PRIMARY KEY);
 CREATE TABLE s1 (id int PRIMARY KEY);
 
-SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'replisome');
+SELECT slot_create();
 
 
 -- Include commands in single tables
@@ -28,7 +28,7 @@ delete from t1 where id = 10;
 delete from t2 where id = 20;
 delete from t3 where id = 30;
 
-SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1',
+SELECT data FROM slot_get(
 	'include', '{"table": "t1"}', 'include', '{"table": "t3"}');
 
 
@@ -38,7 +38,7 @@ insert into t1 values (1);
 insert into t2 values (2);
 insert into s1 values (3);
 
-SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1',
+SELECT data FROM slot_get(
 	'include', '{"tables": "t"}');
 
 
@@ -46,7 +46,7 @@ insert into t1 values (4);
 insert into t2 values (5);
 insert into s1 values (6);
 
-SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1',
+SELECT data FROM slot_get(
 	'include', '{"tables": "^.1$"}');
 
 
@@ -57,7 +57,7 @@ insert into t2 values (8);
 insert into t3 values (9);
 insert into s1 values (10);
 
-SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1',
+SELECT data FROM slot_get(
 	'include', '{"tables": "^t"}', 'exclude', '{"table": "t2"}');
 
 
@@ -68,7 +68,7 @@ insert into t2 values (12);
 insert into t3 values (13);
 
 
-SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1',
+SELECT data FROM slot_get(
 	'exclude', '{"table": "t2"}');
 
 
@@ -80,7 +80,7 @@ insert into t3 values (16);
 insert into s1 values (17);
 
 
-SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1',
+SELECT data FROM slot_get(
 	'exclude', '{"tables": ".1"}');
 
 
@@ -92,8 +92,8 @@ insert into t3 values (20);
 insert into s1 values (21);
 
 
-SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1',
+SELECT data FROM slot_get(
 	'exclude', '{"tables": "t"}', 'include', '{"tables": ".2"}');
 
 
-SELECT 'stop' FROM pg_drop_replication_slot('regression_slot');
+SELECT slot_drop();
