@@ -34,8 +34,8 @@ typedef struct
 } InclusionCommands;
 
 
-void inc_parse_include_table(DefElem *elem, InclusionCommands **cmds);
-void inc_parse_exclude_table(DefElem *elem, InclusionCommands **cmds);
+void inc_parse_include(DefElem *elem, InclusionCommands **cmds);
+void inc_parse_exclude(DefElem *elem, InclusionCommands **cmds);
 bool inc_should_emit(InclusionCommands *cmds, Relation relation);
 
 

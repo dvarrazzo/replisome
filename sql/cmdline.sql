@@ -10,9 +10,23 @@ SELECT 'init' FROM pg_create_logical_replication_slot('regression_slot', 'replis
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL,
 	'nosuchopt', '42');
 
+-- Bad json
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL,
+	'include', '');
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL,
+	'include', '{');
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL,
+	'include', 'null');
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL,
+	'include', '[]');
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL,
+	'include', '"ciao"');
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL,
+	'include', '{}');
+
 -- Regexp error
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL,
-	'include-table', '~(');
+	'include', '{"tables": "("}');
 
 -- By default don't write in chunks
 CREATE TABLE x ();

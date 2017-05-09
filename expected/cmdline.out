@@ -10,9 +10,28 @@ init
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL,
 	'nosuchopt', '42');
 ERROR:  option "nosuchopt" = "42" is unknown
+-- Bad json
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL,
+	'include', '');
+ERROR:  invalid input syntax for type json
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL,
+	'include', '{');
+ERROR:  invalid input syntax for type json
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL,
+	'include', 'null');
+ERROR:  parameter "include" must be a json object, got "null"
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL,
+	'include', '[]');
+ERROR:  parameter "include" must be a json object, got "[]"
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL,
+	'include', '"ciao"');
+ERROR:  parameter "include" must be a json object, got ""ciao""
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL,
+	'include', '{}');
+ERROR:  parameter "include" not valid: "{}"
 -- Regexp error
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL,
-	'include-table', '~(');
+	'include', '{"tables": "("}');
 ERROR:  invalid regular expression "(": parentheses () not balanced
 -- By default don't write in chunks
 CREATE TABLE x ();

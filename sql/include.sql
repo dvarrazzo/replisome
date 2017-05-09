@@ -29,7 +29,7 @@ delete from t2 where id = 20;
 delete from t3 where id = 30;
 
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1',
-	'include-table', 't1', 'include-table', 't3');
+	'include', '{"table": "t1"}', 'include', '{"table": "t3"}');
 
 
 -- Include commands on a pattern of tables
@@ -39,7 +39,7 @@ insert into t2 values (2);
 insert into s1 values (3);
 
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1',
-	'include-table', '~t');
+	'include', '{"tables": "t"}');
 
 
 insert into t1 values (4);
@@ -47,7 +47,7 @@ insert into t2 values (5);
 insert into s1 values (6);
 
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1',
-	'include-table', '~^.1$');
+	'include', '{"tables": "^.1$"}');
 
 
 -- Exclude a table after inclusion
@@ -58,7 +58,7 @@ insert into t3 values (9);
 insert into s1 values (10);
 
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1',
-	'include-table', '~^t', 'exclude-table', 't2');
+	'include', '{"tables": "^t"}', 'exclude', '{"table": "t2"}');
 
 
 -- Exclude a single table
@@ -69,7 +69,7 @@ insert into t3 values (13);
 
 
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1',
-	'exclude-table', 't2');
+	'exclude', '{"table": "t2"}');
 
 
 -- Exclude a pattern
@@ -81,7 +81,7 @@ insert into s1 values (17);
 
 
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1',
-	'exclude-table', '~.1');
+	'exclude', '{"tables": ".1"}');
 
 
 -- Include after exclusion
@@ -93,7 +93,7 @@ insert into s1 values (21);
 
 
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1',
-	'exclude-table', '~t', 'include-table', '~.2');
+	'exclude', '{"tables": "t"}', 'include', '{"tables": ".2"}');
 
 
 SELECT 'stop' FROM pg_drop_replication_slot('regression_slot');

@@ -4,6 +4,9 @@
 #include "reldata.h"
 
 #include "catalog/pg_collation.h"
+#include "utils/builtins.h"
+#include "utils/json.h"
+#include "utils/jsonb.h"
 #include "utils/rel.h"
 
 
@@ -19,50 +22,50 @@ static InclusionCommand *cmd_at_tail(InclusionCommands *cmds, CommandType type);
 static void re_compile(regex_t *re, const char *p);
 static bool re_match(regex_t *re, const char *s);
 
+static bool jsonb_is_type(Datum jsonb, const char *type);
+static char *jsonb_getattr(Datum jsonb, const char *attr);
 
-/* parse a parameter representing one or more tables to include
- *
- * if the value starts with ~ the rest of the command is interpreted as a
- * regexp pattern.
- *
- * The result is pushed on the *cmds* list (which is allocated if needed).
- */
+
 void
-inc_parse_include_table(DefElem *elem, InclusionCommands **cmds)
+inc_parse_include(DefElem *elem, InclusionCommands **cmds)
 {
+	Datum jsonb;
+	char *t;
 	InclusionCommand *cmd;
-	char *val;
-
-	if (elem->arg == NULL)
-	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("parameter \"%s\" requires a value",
-					 elem->defname)));
-	}
 
 	cmds_init(cmds);
 
-	val = strVal(elem->arg);
+	jsonb = DirectFunctionCall1(jsonb_in, CStringGetDatum(strVal(elem->arg)));
 
-	if (val[0] == '~') {
-		cmd = cmd_at_tail(*cmds, CMD_INCLUDE_TABLE_PATTERN);
-		re_compile(&cmd->table_re, val + 1);
+	if (!jsonb_is_type(jsonb, "object")) {
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("parameter \"%s\" must be a json object, got \"%s\"",
+					 elem->defname, strVal(elem->arg))));
 	}
-	else {
+
+	if ((t = jsonb_getattr(jsonb, "table")) != NULL) {
 		cmd = cmd_at_tail(*cmds, CMD_INCLUDE_TABLE);
-		cmd->table_name = pstrdup(val);
+		cmd->table_name = t;
 	}
+	else if ((t = jsonb_getattr(jsonb, "tables")) != NULL) {
+		cmd = cmd_at_tail(*cmds, CMD_INCLUDE_TABLE_PATTERN);
+		re_compile(&cmd->table_re, t);
+		pfree(t);
+	}
+	else
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("parameter \"%s\" not valid: \"%s\"",
+					 elem->defname, strVal(elem->arg))));
+	}
+
+	pfree(DatumGetPointer(jsonb));
 }
 
-
-/* parse a parameter representing one or more tables to exclude
- *
- * if the value starts with ~ the rest of the command is interpreted as a
- * regexp pattern.
- */
 void
-inc_parse_exclude_table(DefElem *elem, InclusionCommands **cmds)
+inc_parse_exclude(DefElem *elem, InclusionCommands **cmds)
 {
 	InclusionCommand *cmd;
 
@@ -71,7 +74,7 @@ inc_parse_exclude_table(DefElem *elem, InclusionCommands **cmds)
 	if (cmds_is_empty(*cmds))
 		cmd_at_tail(*cmds, CMD_INCLUDE_ALL);
 
-	inc_parse_include_table(elem, cmds);
+	inc_parse_include(elem, cmds);
 	cmd = cmds_tail(*cmds);
 	switch (cmd->type)
 	{
@@ -240,4 +243,39 @@ re_match(regex_t *re, const char *s)
 				 errmsg("regular expression match for \"%s\" failed: %s",
 						s, errstr)));
 	}
+}
+
+
+static bool jsonb_is_type(Datum jsonb, const char *type)
+{
+	char *cjtype;
+	Datum jtype;
+	bool rv;
+
+	jtype = DirectFunctionCall1(jsonb_typeof, jsonb);
+	cjtype = TextDatumGetCString(jtype);
+	elog(DEBUG1, "json thing is type %s", cjtype);
+	rv = (strcmp(cjtype, type) == 0);
+	pfree(cjtype);
+	pfree(DatumGetPointer(jtype));
+	return rv;
+}
+
+static char *jsonb_getattr(Datum jsonb, const char *cattr)
+{
+	char *rv = NULL;
+	Datum attr = CStringGetTextDatum(cattr);
+
+	if (DatumGetBool(DirectFunctionCall2(jsonb_exists, jsonb, attr))) {
+		Datum drv = DirectFunctionCall2(jsonb_object_field_text, jsonb, attr);
+		rv = TextDatumGetCString(drv);
+		elog(DEBUG1, "json attr %s = %s", cattr, rv);
+		pfree(DatumGetPointer(drv));
+	}
+	else {
+		elog(DEBUG1, "json attr %s not found", cattr);
+	}
+
+	pfree(DatumGetPointer(attr));
+	return rv;
 }

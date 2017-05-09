@@ -220,13 +220,13 @@ rs_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt, bool is
 						 errmsg("could not parse value \"%s\" for parameter \"%s\"",
 						 strVal(elem->arg), elem->defname)));
 		}
-		else if (strcmp(elem->defname, "include-table") == 0)
+		else if (strcmp(elem->defname, "include") == 0)
 		{
-			inc_parse_include_table(elem, &data->commands);
+			inc_parse_include(elem, &data->commands);
 		}
-		else if (strcmp(elem->defname, "exclude-table") == 0)
+		else if (strcmp(elem->defname, "exclude") == 0)
 		{
-			inc_parse_exclude_table(elem, &data->commands);
+			inc_parse_exclude(elem, &data->commands);
 		}
 		else
 		{
