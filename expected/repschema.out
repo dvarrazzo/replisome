@@ -34,69 +34,63 @@ update table_with_pk set a = 'A' where i = 2;
 update table_with_pk set b = 'B' where i = 2;
 delete from table_with_pk where i = 1;
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1');
-                               data                               
-------------------------------------------------------------------
- {                                                               +
-         "change": [                                             +
-                 {                                               +
-                         "kind": "insert",                       +
-                         "schema": "public",                     +
-                         "table": "table_with_pk",               +
-                         "columnnames": ["i", "a", "b"],         +
-                         "columntypes": ["int4", "text", "text"],+
-                         "columnvalues": [1, "a", "b"]           +
-                 }                                               +
-         ]                                                       +
+                             data                              
+---------------------------------------------------------------
+ {                                                            +
+         "change": [                                          +
+                 {                                            +
+                         "op": "I",                           +
+                         "schema": "public",                  +
+                         "table": "table_with_pk",            +
+                         "colnames": ["i", "a", "b"],         +
+                         "coltypes": ["int4", "text", "text"],+
+                         "values": [1, "a", "b"]              +
+                 }                                            +
+         ]                                                    +
  }
- {                                                               +
-         "change": [                                             +
-                 {                                               +
-                         "kind": "insert",                       +
-                         "schema": "public",                     +
-                         "table": "table_with_pk",               +
-                         "columnvalues": [2, "a", "b"]           +
-                 }                                               +
-         ]                                                       +
+ {                                                            +
+         "change": [                                          +
+                 {                                            +
+                         "op": "I",                           +
+                         "schema": "public",                  +
+                         "table": "table_with_pk",            +
+                         "values": [2, "a", "b"]              +
+                 }                                            +
+         ]                                                    +
  }
- {                                                               +
-         "change": [                                             +
-                 {                                               +
-                         "kind": "update",                       +
-                         "schema": "public",                     +
-                         "table": "table_with_pk",               +
-                         "columnvalues": [2, "A", "b"],          +
-                         "oldkeys": {                            +
-                                 "keynames": ["i", "a"],         +
-                                 "keytypes": ["int4", "text"],   +
-                                 "keyvalues": [2, "a"]           +
-                         }                                       +
-                 }                                               +
-         ]                                                       +
+ {                                                            +
+         "change": [                                          +
+                 {                                            +
+                         "op": "U",                           +
+                         "schema": "public",                  +
+                         "table": "table_with_pk",            +
+                         "values": [2, "A", "b"],             +
+                         "keynames": ["i", "a"],              +
+                         "keytypes": ["int4", "text"],        +
+                         "oldkey": [2, "a"]                   +
+                 }                                            +
+         ]                                                    +
  }
- {                                                               +
-         "change": [                                             +
-                 {                                               +
-                         "kind": "update",                       +
-                         "schema": "public",                     +
-                         "table": "table_with_pk",               +
-                         "columnvalues": [2, "A", "B"],          +
-                         "oldkeys": {                            +
-                                 "keyvalues": [2, "A"]           +
-                         }                                       +
-                 }                                               +
-         ]                                                       +
+ {                                                            +
+         "change": [                                          +
+                 {                                            +
+                         "op": "U",                           +
+                         "schema": "public",                  +
+                         "table": "table_with_pk",            +
+                         "values": [2, "A", "B"],             +
+                         "oldkey": [2, "A"]                   +
+                 }                                            +
+         ]                                                    +
  }
- {                                                               +
-         "change": [                                             +
-                 {                                               +
-                         "kind": "delete",                       +
-                         "schema": "public",                     +
-                         "table": "table_with_pk",               +
-                         "oldkeys": {                            +
-                                 "keyvalues": [1, "a"]           +
-                         }                                       +
-                 }                                               +
-         ]                                                       +
+ {                                                            +
+         "change": [                                          +
+                 {                                            +
+                         "op": "D",                           +
+                         "schema": "public",                  +
+                         "table": "table_with_pk",            +
+                         "oldkey": [1, "a"]                   +
+                 }                                            +
+         ]                                                    +
  }
 (5 rows)
 
@@ -107,69 +101,63 @@ update table_with_pk set a = 'A' where i = 4;
 update table_with_pk set b = 'B' where i = 4;
 delete from table_with_pk where i = 3;
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1');
-                               data                               
-------------------------------------------------------------------
- {                                                               +
-         "change": [                                             +
-                 {                                               +
-                         "kind": "insert",                       +
-                         "schema": "public",                     +
-                         "table": "table_with_pk",               +
-                         "columnnames": ["i", "a", "b"],         +
-                         "columntypes": ["int4", "text", "text"],+
-                         "columnvalues": [3, "a", "b"]           +
-                 }                                               +
-         ]                                                       +
+                             data                              
+---------------------------------------------------------------
+ {                                                            +
+         "change": [                                          +
+                 {                                            +
+                         "op": "I",                           +
+                         "schema": "public",                  +
+                         "table": "table_with_pk",            +
+                         "colnames": ["i", "a", "b"],         +
+                         "coltypes": ["int4", "text", "text"],+
+                         "values": [3, "a", "b"]              +
+                 }                                            +
+         ]                                                    +
  }
- {                                                               +
-         "change": [                                             +
-                 {                                               +
-                         "kind": "insert",                       +
-                         "schema": "public",                     +
-                         "table": "table_with_pk",               +
-                         "columnvalues": [4, "a", "b"]           +
-                 }                                               +
-         ]                                                       +
+ {                                                            +
+         "change": [                                          +
+                 {                                            +
+                         "op": "I",                           +
+                         "schema": "public",                  +
+                         "table": "table_with_pk",            +
+                         "values": [4, "a", "b"]              +
+                 }                                            +
+         ]                                                    +
  }
- {                                                               +
-         "change": [                                             +
-                 {                                               +
-                         "kind": "update",                       +
-                         "schema": "public",                     +
-                         "table": "table_with_pk",               +
-                         "columnvalues": [4, "A", "b"],          +
-                         "oldkeys": {                            +
-                                 "keynames": ["i", "a"],         +
-                                 "keytypes": ["int4", "text"],   +
-                                 "keyvalues": [4, "a"]           +
-                         }                                       +
-                 }                                               +
-         ]                                                       +
+ {                                                            +
+         "change": [                                          +
+                 {                                            +
+                         "op": "U",                           +
+                         "schema": "public",                  +
+                         "table": "table_with_pk",            +
+                         "values": [4, "A", "b"],             +
+                         "keynames": ["i", "a"],              +
+                         "keytypes": ["int4", "text"],        +
+                         "oldkey": [4, "a"]                   +
+                 }                                            +
+         ]                                                    +
  }
- {                                                               +
-         "change": [                                             +
-                 {                                               +
-                         "kind": "update",                       +
-                         "schema": "public",                     +
-                         "table": "table_with_pk",               +
-                         "columnvalues": [4, "A", "B"],          +
-                         "oldkeys": {                            +
-                                 "keyvalues": [4, "A"]           +
-                         }                                       +
-                 }                                               +
-         ]                                                       +
+ {                                                            +
+         "change": [                                          +
+                 {                                            +
+                         "op": "U",                           +
+                         "schema": "public",                  +
+                         "table": "table_with_pk",            +
+                         "values": [4, "A", "B"],             +
+                         "oldkey": [4, "A"]                   +
+                 }                                            +
+         ]                                                    +
  }
- {                                                               +
-         "change": [                                             +
-                 {                                               +
-                         "kind": "delete",                       +
-                         "schema": "public",                     +
-                         "table": "table_with_pk",               +
-                         "oldkeys": {                            +
-                                 "keyvalues": [3, "a"]           +
-                         }                                       +
-                 }                                               +
-         ]                                                       +
+ {                                                            +
+         "change": [                                          +
+                 {                                            +
+                         "op": "D",                           +
+                         "schema": "public",                  +
+                         "table": "table_with_pk",            +
+                         "oldkey": [3, "a"]                   +
+                 }                                            +
+         ]                                                    +
  }
 (5 rows)
 
@@ -178,29 +166,29 @@ alter table table_with_pk add c text;
 insert into table_with_pk values (5, 'a', 'b', 'c');
 insert into table_with_pk values (6, 'a', 'b', 'c');
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1');
-                                   data                                   
---------------------------------------------------------------------------
- {                                                                       +
-         "change": [                                                     +
-                 {                                                       +
-                         "kind": "insert",                               +
-                         "schema": "public",                             +
-                         "table": "table_with_pk",                       +
-                         "columnnames": ["i", "a", "b", "c"],            +
-                         "columntypes": ["int4", "text", "text", "text"],+
-                         "columnvalues": [5, "a", "b", "c"]              +
-                 }                                                       +
-         ]                                                               +
+                                 data                                  
+-----------------------------------------------------------------------
+ {                                                                    +
+         "change": [                                                  +
+                 {                                                    +
+                         "op": "I",                                   +
+                         "schema": "public",                          +
+                         "table": "table_with_pk",                    +
+                         "colnames": ["i", "a", "b", "c"],            +
+                         "coltypes": ["int4", "text", "text", "text"],+
+                         "values": [5, "a", "b", "c"]                 +
+                 }                                                    +
+         ]                                                            +
  }
- {                                                                       +
-         "change": [                                                     +
-                 {                                                       +
-                         "kind": "insert",                               +
-                         "schema": "public",                             +
-                         "table": "table_with_pk",                       +
-                         "columnvalues": [6, "a", "b", "c"]              +
-                 }                                                       +
-         ]                                                               +
+ {                                                                    +
+         "change": [                                                  +
+                 {                                                    +
+                         "op": "I",                                   +
+                         "schema": "public",                          +
+                         "table": "table_with_pk",                    +
+                         "values": [6, "a", "b", "c"]                 +
+                 }                                                    +
+         ]                                                            +
  }
 (2 rows)
 
@@ -211,51 +199,51 @@ alter table table_with_pk add d text;
 insert into table_with_pk values (9, 'a', 'b', 'c', 'd');
 insert into table_with_pk values (10, 'a', 'b', 'c', 'd');
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1');
-                                       data                                       
-----------------------------------------------------------------------------------
- {                                                                               +
-         "change": [                                                             +
-                 {                                                               +
-                         "kind": "insert",                                       +
-                         "schema": "public",                                     +
-                         "table": "table_with_pk",                               +
-                         "columnnames": ["i", "a", "b", "c"],                    +
-                         "columntypes": ["int4", "text", "text", "text"],        +
-                         "columnvalues": [7, "a", "b", "c"]                      +
-                 }                                                               +
-         ]                                                                       +
+                                     data                                      
+-------------------------------------------------------------------------------
+ {                                                                            +
+         "change": [                                                          +
+                 {                                                            +
+                         "op": "I",                                           +
+                         "schema": "public",                                  +
+                         "table": "table_with_pk",                            +
+                         "colnames": ["i", "a", "b", "c"],                    +
+                         "coltypes": ["int4", "text", "text", "text"],        +
+                         "values": [7, "a", "b", "c"]                         +
+                 }                                                            +
+         ]                                                                    +
  }
- {                                                                               +
-         "change": [                                                             +
-                 {                                                               +
-                         "kind": "insert",                                       +
-                         "schema": "public",                                     +
-                         "table": "table_with_pk",                               +
-                         "columnvalues": [8, "a", "b", "c"]                      +
-                 }                                                               +
-         ]                                                                       +
+ {                                                                            +
+         "change": [                                                          +
+                 {                                                            +
+                         "op": "I",                                           +
+                         "schema": "public",                                  +
+                         "table": "table_with_pk",                            +
+                         "values": [8, "a", "b", "c"]                         +
+                 }                                                            +
+         ]                                                                    +
  }
- {                                                                               +
-         "change": [                                                             +
-                 {                                                               +
-                         "kind": "insert",                                       +
-                         "schema": "public",                                     +
-                         "table": "table_with_pk",                               +
-                         "columnnames": ["i", "a", "b", "c", "d"],               +
-                         "columntypes": ["int4", "text", "text", "text", "text"],+
-                         "columnvalues": [9, "a", "b", "c", "d"]                 +
-                 }                                                               +
-         ]                                                                       +
+ {                                                                            +
+         "change": [                                                          +
+                 {                                                            +
+                         "op": "I",                                           +
+                         "schema": "public",                                  +
+                         "table": "table_with_pk",                            +
+                         "colnames": ["i", "a", "b", "c", "d"],               +
+                         "coltypes": ["int4", "text", "text", "text", "text"],+
+                         "values": [9, "a", "b", "c", "d"]                    +
+                 }                                                            +
+         ]                                                                    +
  }
- {                                                                               +
-         "change": [                                                             +
-                 {                                                               +
-                         "kind": "insert",                                       +
-                         "schema": "public",                                     +
-                         "table": "table_with_pk",                               +
-                         "columnvalues": [10, "a", "b", "c", "d"]                +
-                 }                                                               +
-         ]                                                                       +
+ {                                                                            +
+         "change": [                                                          +
+                 {                                                            +
+                         "op": "I",                                           +
+                         "schema": "public",                                  +
+                         "table": "table_with_pk",                            +
+                         "values": [10, "a", "b", "c", "d"]                   +
+                 }                                                            +
+         ]                                                                    +
  }
 (4 rows)
 
@@ -268,39 +256,39 @@ insert into table_with_pk values (13, 'a', 'b', 'c');
 insert into table_with_pk values (14, 'a', 'b', 'c');
 commit;
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1');
-                                       data                                       
-----------------------------------------------------------------------------------
- {                                                                               +
-         "change": [                                                             +
-                 {                                                               +
-                         "kind": "insert",                                       +
-                         "schema": "public",                                     +
-                         "table": "table_with_pk",                               +
-                         "columnnames": ["i", "a", "b", "c", "d"],               +
-                         "columntypes": ["int4", "text", "text", "text", "text"],+
-                         "columnvalues": [11, "a", "b", "c", "d"]                +
-                 }                                                               +
-                 ,{                                                              +
-                         "kind": "insert",                                       +
-                         "schema": "public",                                     +
-                         "table": "table_with_pk",                               +
-                         "columnvalues": [12, "a", "b", "c", "d"]                +
-                 }                                                               +
-                 ,{                                                              +
-                         "kind": "insert",                                       +
-                         "schema": "public",                                     +
-                         "table": "table_with_pk",                               +
-                         "columnnames": ["i", "a", "b", "c"],                    +
-                         "columntypes": ["int4", "text", "text", "text"],        +
-                         "columnvalues": [13, "a", "b", "c"]                     +
-                 }                                                               +
-                 ,{                                                              +
-                         "kind": "insert",                                       +
-                         "schema": "public",                                     +
-                         "table": "table_with_pk",                               +
-                         "columnvalues": [14, "a", "b", "c"]                     +
-                 }                                                               +
-         ]                                                                       +
+                                     data                                      
+-------------------------------------------------------------------------------
+ {                                                                            +
+         "change": [                                                          +
+                 {                                                            +
+                         "op": "I",                                           +
+                         "schema": "public",                                  +
+                         "table": "table_with_pk",                            +
+                         "colnames": ["i", "a", "b", "c", "d"],               +
+                         "coltypes": ["int4", "text", "text", "text", "text"],+
+                         "values": [11, "a", "b", "c", "d"]                   +
+                 }                                                            +
+                 ,{                                                           +
+                         "op": "I",                                           +
+                         "schema": "public",                                  +
+                         "table": "table_with_pk",                            +
+                         "values": [12, "a", "b", "c", "d"]                   +
+                 }                                                            +
+                 ,{                                                           +
+                         "op": "I",                                           +
+                         "schema": "public",                                  +
+                         "table": "table_with_pk",                            +
+                         "colnames": ["i", "a", "b", "c"],                    +
+                         "coltypes": ["int4", "text", "text", "text"],        +
+                         "values": [13, "a", "b", "c"]                        +
+                 }                                                            +
+                 ,{                                                           +
+                         "op": "I",                                           +
+                         "schema": "public",                                  +
+                         "table": "table_with_pk",                            +
+                         "values": [14, "a", "b", "c"]                        +
+                 }                                                            +
+         ]                                                                    +
  }
 (1 row)
 
@@ -316,65 +304,57 @@ update table_with_pk set b = 'B' where i = 16;
 delete from table_with_pk where i = 16;
 commit;
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1');
-                                   data                                   
---------------------------------------------------------------------------
- {                                                                       +
-         "change": [                                                     +
-                 {                                                       +
-                         "kind": "insert",                               +
-                         "schema": "public",                             +
-                         "table": "table_with_pk",                       +
-                         "columnnames": ["i", "a", "b", "c"],            +
-                         "columntypes": ["int4", "text", "text", "text"],+
-                         "columnvalues": [15, "a", "b", "c"]             +
-                 }                                                       +
-                 ,{                                                      +
-                         "kind": "update",                               +
-                         "schema": "public",                             +
-                         "table": "table_with_pk",                       +
-                         "columnvalues": [15, "A", "b", "c"],            +
-                         "oldkeys": {                                    +
-                                 "keynames": ["i", "a"],                 +
-                                 "keytypes": ["int4", "text"],           +
-                                 "keyvalues": [15, "a"]                  +
-                         }                                               +
-                 }                                                       +
-                 ,{                                                      +
-                         "kind": "delete",                               +
-                         "schema": "public",                             +
-                         "table": "table_with_pk",                       +
-                         "oldkeys": {                                    +
-                                 "keyvalues": [15, "A"]                  +
-                         }                                               +
-                 }                                                       +
-                 ,{                                                      +
-                         "kind": "insert",                               +
-                         "schema": "public",                             +
-                         "table": "table_with_pk",                       +
-                         "columnnames": ["i", "b", "c"],                 +
-                         "columntypes": ["int4", "text", "text"],        +
-                         "columnvalues": [16, "b", "c"]                  +
-                 }                                                       +
-                 ,{                                                      +
-                         "kind": "update",                               +
-                         "schema": "public",                             +
-                         "table": "table_with_pk",                       +
-                         "columnvalues": [16, "B", "c"],                 +
-                         "oldkeys": {                                    +
-                                 "keynames": ["i"],                      +
-                                 "keytypes": ["int4"],                   +
-                                 "keyvalues": [16]                       +
-                         }                                               +
-                 }                                                       +
-                 ,{                                                      +
-                         "kind": "delete",                               +
-                         "schema": "public",                             +
-                         "table": "table_with_pk",                       +
-                         "oldkeys": {                                    +
-                                 "keyvalues": [16]                       +
-                         }                                               +
-                 }                                                       +
-         ]                                                               +
+                                 data                                  
+-----------------------------------------------------------------------
+ {                                                                    +
+         "change": [                                                  +
+                 {                                                    +
+                         "op": "I",                                   +
+                         "schema": "public",                          +
+                         "table": "table_with_pk",                    +
+                         "colnames": ["i", "a", "b", "c"],            +
+                         "coltypes": ["int4", "text", "text", "text"],+
+                         "values": [15, "a", "b", "c"]                +
+                 }                                                    +
+                 ,{                                                   +
+                         "op": "U",                                   +
+                         "schema": "public",                          +
+                         "table": "table_with_pk",                    +
+                         "values": [15, "A", "b", "c"],               +
+                         "keynames": ["i", "a"],                      +
+                         "keytypes": ["int4", "text"],                +
+                         "oldkey": [15, "a"]                          +
+                 }                                                    +
+                 ,{                                                   +
+                         "op": "D",                                   +
+                         "schema": "public",                          +
+                         "table": "table_with_pk",                    +
+                         "oldkey": [15, "A"]                          +
+                 }                                                    +
+                 ,{                                                   +
+                         "op": "I",                                   +
+                         "schema": "public",                          +
+                         "table": "table_with_pk",                    +
+                         "colnames": ["i", "b", "c"],                 +
+                         "coltypes": ["int4", "text", "text"],        +
+                         "values": [16, "b", "c"]                     +
+                 }                                                    +
+                 ,{                                                   +
+                         "op": "U",                                   +
+                         "schema": "public",                          +
+                         "table": "table_with_pk",                    +
+                         "values": [16, "B", "c"],                    +
+                         "keynames": ["i"],                           +
+                         "keytypes": ["int4"],                        +
+                         "oldkey": [16]                               +
+                 }                                                    +
+                 ,{                                                   +
+                         "op": "D",                                   +
+                         "schema": "public",                          +
+                         "table": "table_with_pk",                    +
+                         "oldkey": [16]                               +
+                 }                                                    +
+         ]                                                            +
  }
 (1 row)
 
@@ -388,29 +368,29 @@ SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pre
 WARNING:  table "table_without_pk" without primary key or replica identity is nothing
 WARNING:  table "table_without_pk" without primary key or replica identity is nothing
 WARNING:  table "table_without_pk" without primary key or replica identity is nothing
-                               data                               
-------------------------------------------------------------------
- {                                                               +
-         "change": [                                             +
-                 {                                               +
-                         "kind": "insert",                       +
-                         "schema": "public",                     +
-                         "table": "table_without_pk",            +
-                         "columnnames": ["i", "a", "b"],         +
-                         "columntypes": ["int4", "text", "text"],+
-                         "columnvalues": [1, "a", "b"]           +
-                 }                                               +
-         ]                                                       +
+                             data                              
+---------------------------------------------------------------
+ {                                                            +
+         "change": [                                          +
+                 {                                            +
+                         "op": "I",                           +
+                         "schema": "public",                  +
+                         "table": "table_without_pk",         +
+                         "colnames": ["i", "a", "b"],         +
+                         "coltypes": ["int4", "text", "text"],+
+                         "values": [1, "a", "b"]              +
+                 }                                            +
+         ]                                                    +
  }
- {                                                               +
-         "change": [                                             +
-                 {                                               +
-                         "kind": "insert",                       +
-                         "schema": "public",                     +
-                         "table": "table_without_pk",            +
-                         "columnvalues": [2, "a", "b"]           +
-                 }                                               +
-         ]                                                       +
+ {                                                            +
+         "change": [                                          +
+                 {                                            +
+                         "op": "I",                           +
+                         "schema": "public",                  +
+                         "table": "table_without_pk",         +
+                         "values": [2, "a", "b"]              +
+                 }                                            +
+         ]                                                    +
  }
 (2 rows)
 
@@ -423,69 +403,63 @@ update table_without_pk set a = 'A' where i = 4;
 update table_without_pk set b = 'B' where i = 4;
 delete from table_without_pk where i = 3;
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1');
-                                 data                                  
------------------------------------------------------------------------
- {                                                                    +
-         "change": [                                                  +
-                 {                                                    +
-                         "kind": "insert",                            +
-                         "schema": "public",                          +
-                         "table": "table_without_pk",                 +
-                         "columnnames": ["i", "a", "b"],              +
-                         "columntypes": ["int4", "text", "text"],     +
-                         "columnvalues": [3, "a", "b"]                +
-                 }                                                    +
-         ]                                                            +
+                             data                              
+---------------------------------------------------------------
+ {                                                            +
+         "change": [                                          +
+                 {                                            +
+                         "op": "I",                           +
+                         "schema": "public",                  +
+                         "table": "table_without_pk",         +
+                         "colnames": ["i", "a", "b"],         +
+                         "coltypes": ["int4", "text", "text"],+
+                         "values": [3, "a", "b"]              +
+                 }                                            +
+         ]                                                    +
  }
- {                                                                    +
-         "change": [                                                  +
-                 {                                                    +
-                         "kind": "insert",                            +
-                         "schema": "public",                          +
-                         "table": "table_without_pk",                 +
-                         "columnvalues": [4, "a", "b"]                +
-                 }                                                    +
-         ]                                                            +
+ {                                                            +
+         "change": [                                          +
+                 {                                            +
+                         "op": "I",                           +
+                         "schema": "public",                  +
+                         "table": "table_without_pk",         +
+                         "values": [4, "a", "b"]              +
+                 }                                            +
+         ]                                                    +
  }
- {                                                                    +
-         "change": [                                                  +
-                 {                                                    +
-                         "kind": "update",                            +
-                         "schema": "public",                          +
-                         "table": "table_without_pk",                 +
-                         "columnvalues": [4, "A", "b"],               +
-                         "oldkeys": {                                 +
-                                 "keynames": ["i", "a", "b"],         +
-                                 "keytypes": ["int4", "text", "text"],+
-                                 "keyvalues": [4, "a", "b"]           +
-                         }                                            +
-                 }                                                    +
-         ]                                                            +
+ {                                                            +
+         "change": [                                          +
+                 {                                            +
+                         "op": "U",                           +
+                         "schema": "public",                  +
+                         "table": "table_without_pk",         +
+                         "values": [4, "A", "b"],             +
+                         "keynames": ["i", "a", "b"],         +
+                         "keytypes": ["int4", "text", "text"],+
+                         "oldkey": [4, "a", "b"]              +
+                 }                                            +
+         ]                                                    +
  }
- {                                                                    +
-         "change": [                                                  +
-                 {                                                    +
-                         "kind": "update",                            +
-                         "schema": "public",                          +
-                         "table": "table_without_pk",                 +
-                         "columnvalues": [4, "A", "B"],               +
-                         "oldkeys": {                                 +
-                                 "keyvalues": [4, "A", "b"]           +
-                         }                                            +
-                 }                                                    +
-         ]                                                            +
+ {                                                            +
+         "change": [                                          +
+                 {                                            +
+                         "op": "U",                           +
+                         "schema": "public",                  +
+                         "table": "table_without_pk",         +
+                         "values": [4, "A", "B"],             +
+                         "oldkey": [4, "A", "b"]              +
+                 }                                            +
+         ]                                                    +
  }
- {                                                                    +
-         "change": [                                                  +
-                 {                                                    +
-                         "kind": "delete",                            +
-                         "schema": "public",                          +
-                         "table": "table_without_pk",                 +
-                         "oldkeys": {                                 +
-                                 "keyvalues": [3, "a", "b"]           +
-                         }                                            +
-                 }                                                    +
-         ]                                                            +
+ {                                                            +
+         "change": [                                          +
+                 {                                            +
+                         "op": "D",                           +
+                         "schema": "public",                  +
+                         "table": "table_without_pk",         +
+                         "oldkey": [3, "a", "b"]              +
+                 }                                            +
+         ]                                                    +
  }
 (5 rows)
 
@@ -494,29 +468,29 @@ alter table table_without_pk add c text;
 insert into table_without_pk values (5, 'a', 'b', 'c');
 insert into table_without_pk values (6, 'a', 'b', 'c');
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1');
-                                   data                                   
---------------------------------------------------------------------------
- {                                                                       +
-         "change": [                                                     +
-                 {                                                       +
-                         "kind": "insert",                               +
-                         "schema": "public",                             +
-                         "table": "table_without_pk",                    +
-                         "columnnames": ["i", "a", "b", "c"],            +
-                         "columntypes": ["int4", "text", "text", "text"],+
-                         "columnvalues": [5, "a", "b", "c"]              +
-                 }                                                       +
-         ]                                                               +
+                                 data                                  
+-----------------------------------------------------------------------
+ {                                                                    +
+         "change": [                                                  +
+                 {                                                    +
+                         "op": "I",                                   +
+                         "schema": "public",                          +
+                         "table": "table_without_pk",                 +
+                         "colnames": ["i", "a", "b", "c"],            +
+                         "coltypes": ["int4", "text", "text", "text"],+
+                         "values": [5, "a", "b", "c"]                 +
+                 }                                                    +
+         ]                                                            +
  }
- {                                                                       +
-         "change": [                                                     +
-                 {                                                       +
-                         "kind": "insert",                               +
-                         "schema": "public",                             +
-                         "table": "table_without_pk",                    +
-                         "columnvalues": [6, "a", "b", "c"]              +
-                 }                                                       +
-         ]                                                               +
+ {                                                                    +
+         "change": [                                                  +
+                 {                                                    +
+                         "op": "I",                                   +
+                         "schema": "public",                          +
+                         "table": "table_without_pk",                 +
+                         "values": [6, "a", "b", "c"]                 +
+                 }                                                    +
+         ]                                                            +
  }
 (2 rows)
 
@@ -527,51 +501,51 @@ alter table table_without_pk add d text;
 insert into table_without_pk values (9, 'a', 'b', 'c', 'd');
 insert into table_without_pk values (10, 'a', 'b', 'c', 'd');
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1');
-                                       data                                       
-----------------------------------------------------------------------------------
- {                                                                               +
-         "change": [                                                             +
-                 {                                                               +
-                         "kind": "insert",                                       +
-                         "schema": "public",                                     +
-                         "table": "table_without_pk",                            +
-                         "columnnames": ["i", "a", "b", "c"],                    +
-                         "columntypes": ["int4", "text", "text", "text"],        +
-                         "columnvalues": [7, "a", "b", "c"]                      +
-                 }                                                               +
-         ]                                                                       +
+                                     data                                      
+-------------------------------------------------------------------------------
+ {                                                                            +
+         "change": [                                                          +
+                 {                                                            +
+                         "op": "I",                                           +
+                         "schema": "public",                                  +
+                         "table": "table_without_pk",                         +
+                         "colnames": ["i", "a", "b", "c"],                    +
+                         "coltypes": ["int4", "text", "text", "text"],        +
+                         "values": [7, "a", "b", "c"]                         +
+                 }                                                            +
+         ]                                                                    +
  }
- {                                                                               +
-         "change": [                                                             +
-                 {                                                               +
-                         "kind": "insert",                                       +
-                         "schema": "public",                                     +
-                         "table": "table_without_pk",                            +
-                         "columnvalues": [8, "a", "b", "c"]                      +
-                 }                                                               +
-         ]                                                                       +
+ {                                                                            +
+         "change": [                                                          +
+                 {                                                            +
+                         "op": "I",                                           +
+                         "schema": "public",                                  +
+                         "table": "table_without_pk",                         +
+                         "values": [8, "a", "b", "c"]                         +
+                 }                                                            +
+         ]                                                                    +
  }
- {                                                                               +
-         "change": [                                                             +
-                 {                                                               +
-                         "kind": "insert",                                       +
-                         "schema": "public",                                     +
-                         "table": "table_without_pk",                            +
-                         "columnnames": ["i", "a", "b", "c", "d"],               +
-                         "columntypes": ["int4", "text", "text", "text", "text"],+
-                         "columnvalues": [9, "a", "b", "c", "d"]                 +
-                 }                                                               +
-         ]                                                                       +
+ {                                                                            +
+         "change": [                                                          +
+                 {                                                            +
+                         "op": "I",                                           +
+                         "schema": "public",                                  +
+                         "table": "table_without_pk",                         +
+                         "colnames": ["i", "a", "b", "c", "d"],               +
+                         "coltypes": ["int4", "text", "text", "text", "text"],+
+                         "values": [9, "a", "b", "c", "d"]                    +
+                 }                                                            +
+         ]                                                                    +
  }
- {                                                                               +
-         "change": [                                                             +
-                 {                                                               +
-                         "kind": "insert",                                       +
-                         "schema": "public",                                     +
-                         "table": "table_without_pk",                            +
-                         "columnvalues": [10, "a", "b", "c", "d"]                +
-                 }                                                               +
-         ]                                                                       +
+ {                                                                            +
+         "change": [                                                          +
+                 {                                                            +
+                         "op": "I",                                           +
+                         "schema": "public",                                  +
+                         "table": "table_without_pk",                         +
+                         "values": [10, "a", "b", "c", "d"]                   +
+                 }                                                            +
+         ]                                                                    +
  }
 (4 rows)
 
@@ -584,39 +558,39 @@ insert into table_without_pk values (13, 'a', 'b', 'c');
 insert into table_without_pk values (14, 'a', 'b', 'c');
 commit;
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1');
-                                       data                                       
-----------------------------------------------------------------------------------
- {                                                                               +
-         "change": [                                                             +
-                 {                                                               +
-                         "kind": "insert",                                       +
-                         "schema": "public",                                     +
-                         "table": "table_without_pk",                            +
-                         "columnnames": ["i", "a", "b", "c", "d"],               +
-                         "columntypes": ["int4", "text", "text", "text", "text"],+
-                         "columnvalues": [11, "a", "b", "c", "d"]                +
-                 }                                                               +
-                 ,{                                                              +
-                         "kind": "insert",                                       +
-                         "schema": "public",                                     +
-                         "table": "table_without_pk",                            +
-                         "columnvalues": [12, "a", "b", "c", "d"]                +
-                 }                                                               +
-                 ,{                                                              +
-                         "kind": "insert",                                       +
-                         "schema": "public",                                     +
-                         "table": "table_without_pk",                            +
-                         "columnnames": ["i", "a", "b", "c"],                    +
-                         "columntypes": ["int4", "text", "text", "text"],        +
-                         "columnvalues": [13, "a", "b", "c"]                     +
-                 }                                                               +
-                 ,{                                                              +
-                         "kind": "insert",                                       +
-                         "schema": "public",                                     +
-                         "table": "table_without_pk",                            +
-                         "columnvalues": [14, "a", "b", "c"]                     +
-                 }                                                               +
-         ]                                                                       +
+                                     data                                      
+-------------------------------------------------------------------------------
+ {                                                                            +
+         "change": [                                                          +
+                 {                                                            +
+                         "op": "I",                                           +
+                         "schema": "public",                                  +
+                         "table": "table_without_pk",                         +
+                         "colnames": ["i", "a", "b", "c", "d"],               +
+                         "coltypes": ["int4", "text", "text", "text", "text"],+
+                         "values": [11, "a", "b", "c", "d"]                   +
+                 }                                                            +
+                 ,{                                                           +
+                         "op": "I",                                           +
+                         "schema": "public",                                  +
+                         "table": "table_without_pk",                         +
+                         "values": [12, "a", "b", "c", "d"]                   +
+                 }                                                            +
+                 ,{                                                           +
+                         "op": "I",                                           +
+                         "schema": "public",                                  +
+                         "table": "table_without_pk",                         +
+                         "colnames": ["i", "a", "b", "c"],                    +
+                         "coltypes": ["int4", "text", "text", "text"],        +
+                         "values": [13, "a", "b", "c"]                        +
+                 }                                                            +
+                 ,{                                                           +
+                         "op": "I",                                           +
+                         "schema": "public",                                  +
+                         "table": "table_without_pk",                         +
+                         "values": [14, "a", "b", "c"]                        +
+                 }                                                            +
+         ]                                                                    +
  }
 (1 row)
 

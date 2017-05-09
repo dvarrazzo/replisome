@@ -24,61 +24,61 @@ RELEASE SAVEPOINT sp1;
 INSERT INTO xpto (b) VALUES('francisco');
 END;
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1');
-                           data                           
-----------------------------------------------------------
- {                                                       +
-         "change": [                                     +
-                 {                                       +
-                         "kind": "insert",               +
-                         "schema": "public",             +
-                         "table": "xpto",                +
-                         "columnnames": ["a", "b"],      +
-                         "columntypes": ["int4", "text"],+
-                         "columnvalues": [1, "john"]     +
-                 }                                       +
-         ]                                               +
+                         data                          
+-------------------------------------------------------
+ {                                                    +
+         "change": [                                  +
+                 {                                    +
+                         "op": "I",                   +
+                         "schema": "public",          +
+                         "table": "xpto",             +
+                         "colnames": ["a", "b"],      +
+                         "coltypes": ["int4", "text"],+
+                         "values": [1, "john"]        +
+                 }                                    +
+         ]                                            +
  }
- {                                                       +
-         "change": [                                     +
-                 {                                       +
-                         "kind": "insert",               +
-                         "schema": "public",             +
-                         "table": "xpto",                +
-                         "columnvalues": [2, "smith"]    +
-                 }                                       +
-         ]                                               +
+ {                                                    +
+         "change": [                                  +
+                 {                                    +
+                         "op": "I",                   +
+                         "schema": "public",          +
+                         "table": "xpto",             +
+                         "values": [2, "smith"]       +
+                 }                                    +
+         ]                                            +
  }
- {                                                       +
-         "change": [                                     +
-                 {                                       +
-                         "kind": "insert",               +
-                         "schema": "public",             +
-                         "table": "xpto",                +
-                         "columnvalues": [3, "robert"]   +
-                 }                                       +
-         ]                                               +
+ {                                                    +
+         "change": [                                  +
+                 {                                    +
+                         "op": "I",                   +
+                         "schema": "public",          +
+                         "table": "xpto",             +
+                         "values": [3, "robert"]      +
+                 }                                    +
+         ]                                            +
  }
- {                                                       +
-         "change": [                                     +
-                 {                                       +
-                         "kind": "insert",               +
-                         "schema": "public",             +
-                         "table": "xpto",                +
-                         "columnvalues": [4, "marie"]    +
-                 }                                       +
-                 ,{                                      +
-                         "kind": "insert",               +
-                         "schema": "public",             +
-                         "table": "xpto",                +
-                         "columnvalues": [5, "ernesto"]  +
-                 }                                       +
-                 ,{                                      +
-                         "kind": "insert",               +
-                         "schema": "public",             +
-                         "table": "xpto",                +
-                         "columnvalues": [8, "francisco"]+
-                 }                                       +
-         ]                                               +
+ {                                                    +
+         "change": [                                  +
+                 {                                    +
+                         "op": "I",                   +
+                         "schema": "public",          +
+                         "table": "xpto",             +
+                         "values": [4, "marie"]       +
+                 }                                    +
+                 ,{                                   +
+                         "op": "I",                   +
+                         "schema": "public",          +
+                         "table": "xpto",             +
+                         "values": [5, "ernesto"]     +
+                 }                                    +
+                 ,{                                   +
+                         "op": "I",                   +
+                         "schema": "public",          +
+                         "table": "xpto",             +
+                         "values": [8, "francisco"]   +
+                 }                                    +
+         ]                                            +
  }
 (4 rows)
 

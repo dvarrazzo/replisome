@@ -29,85 +29,77 @@ delete from t2 where id = 20;
 delete from t3 where id = 30;
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1',
 	'include-table', 't1', 'include-table', 't3');
-                         data                          
--------------------------------------------------------
- {                                                    +
-         "change": [                                  +
-                 {                                    +
-                         "kind": "insert",            +
-                         "schema": "public",          +
-                         "table": "t1",               +
-                         "columnnames": ["id"],       +
-                         "columntypes": ["int4"],     +
-                         "columnvalues": [1]          +
-                 }                                    +
-         ]                                            +
+                     data                      
+-----------------------------------------------
+ {                                            +
+         "change": [                          +
+                 {                            +
+                         "op": "I",           +
+                         "schema": "public",  +
+                         "table": "t1",       +
+                         "colnames": ["id"],  +
+                         "coltypes": ["int4"],+
+                         "values": [1]        +
+                 }                            +
+         ]                                    +
  }
- {                                                    +
-         "change": [                                  +
-                 {                                    +
-                         "kind": "insert",            +
-                         "schema": "public",          +
-                         "table": "t3",               +
-                         "columnnames": ["id"],       +
-                         "columntypes": ["int4"],     +
-                         "columnvalues": [3]          +
-                 }                                    +
-         ]                                            +
+ {                                            +
+         "change": [                          +
+                 {                            +
+                         "op": "I",           +
+                         "schema": "public",  +
+                         "table": "t3",       +
+                         "colnames": ["id"],  +
+                         "coltypes": ["int4"],+
+                         "values": [3]        +
+                 }                            +
+         ]                                    +
  }
- {                                                    +
-         "change": [                                  +
-                 {                                    +
-                         "kind": "update",            +
-                         "schema": "public",          +
-                         "table": "t1",               +
-                         "columnvalues": [10],        +
-                         "oldkeys": {                 +
-                                 "keynames": ["id"],  +
-                                 "keytypes": ["int4"],+
-                                 "keyvalues": [1]     +
-                         }                            +
-                 }                                    +
-         ]                                            +
+ {                                            +
+         "change": [                          +
+                 {                            +
+                         "op": "U",           +
+                         "schema": "public",  +
+                         "table": "t1",       +
+                         "values": [10],      +
+                         "keynames": ["id"],  +
+                         "keytypes": ["int4"],+
+                         "oldkey": [1]        +
+                 }                            +
+         ]                                    +
  }
- {                                                    +
-         "change": [                                  +
-                 {                                    +
-                         "kind": "update",            +
-                         "schema": "public",          +
-                         "table": "t3",               +
-                         "columnvalues": [30],        +
-                         "oldkeys": {                 +
-                                 "keynames": ["id"],  +
-                                 "keytypes": ["int4"],+
-                                 "keyvalues": [3]     +
-                         }                            +
-                 }                                    +
-         ]                                            +
+ {                                            +
+         "change": [                          +
+                 {                            +
+                         "op": "U",           +
+                         "schema": "public",  +
+                         "table": "t3",       +
+                         "values": [30],      +
+                         "keynames": ["id"],  +
+                         "keytypes": ["int4"],+
+                         "oldkey": [3]        +
+                 }                            +
+         ]                                    +
  }
- {                                                    +
-         "change": [                                  +
-                 {                                    +
-                         "kind": "delete",            +
-                         "schema": "public",          +
-                         "table": "t1",               +
-                         "oldkeys": {                 +
-                                 "keyvalues": [10]    +
-                         }                            +
-                 }                                    +
-         ]                                            +
+ {                                            +
+         "change": [                          +
+                 {                            +
+                         "op": "D",           +
+                         "schema": "public",  +
+                         "table": "t1",       +
+                         "oldkey": [10]       +
+                 }                            +
+         ]                                    +
  }
- {                                                    +
-         "change": [                                  +
-                 {                                    +
-                         "kind": "delete",            +
-                         "schema": "public",          +
-                         "table": "t3",               +
-                         "oldkeys": {                 +
-                                 "keyvalues": [30]    +
-                         }                            +
-                 }                                    +
-         ]                                            +
+ {                                            +
+         "change": [                          +
+                 {                            +
+                         "op": "D",           +
+                         "schema": "public",  +
+                         "table": "t3",       +
+                         "oldkey": [30]       +
+                 }                            +
+         ]                                    +
  }
 (6 rows)
 
@@ -117,31 +109,31 @@ insert into t2 values (2);
 insert into s1 values (3);
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1',
 	'include-table', '~t');
-                       data                       
---------------------------------------------------
- {                                               +
-         "change": [                             +
-                 {                               +
-                         "kind": "insert",       +
-                         "schema": "public",     +
-                         "table": "t1",          +
-                         "columnnames": ["id"],  +
-                         "columntypes": ["int4"],+
-                         "columnvalues": [1]     +
-                 }                               +
-         ]                                       +
+                     data                      
+-----------------------------------------------
+ {                                            +
+         "change": [                          +
+                 {                            +
+                         "op": "I",           +
+                         "schema": "public",  +
+                         "table": "t1",       +
+                         "colnames": ["id"],  +
+                         "coltypes": ["int4"],+
+                         "values": [1]        +
+                 }                            +
+         ]                                    +
  }
- {                                               +
-         "change": [                             +
-                 {                               +
-                         "kind": "insert",       +
-                         "schema": "public",     +
-                         "table": "t2",          +
-                         "columnnames": ["id"],  +
-                         "columntypes": ["int4"],+
-                         "columnvalues": [2]     +
-                 }                               +
-         ]                                       +
+ {                                            +
+         "change": [                          +
+                 {                            +
+                         "op": "I",           +
+                         "schema": "public",  +
+                         "table": "t2",       +
+                         "colnames": ["id"],  +
+                         "coltypes": ["int4"],+
+                         "values": [2]        +
+                 }                            +
+         ]                                    +
  }
 (2 rows)
 
@@ -150,31 +142,31 @@ insert into t2 values (5);
 insert into s1 values (6);
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1',
 	'include-table', '~^.1$');
-                       data                       
---------------------------------------------------
- {                                               +
-         "change": [                             +
-                 {                               +
-                         "kind": "insert",       +
-                         "schema": "public",     +
-                         "table": "t1",          +
-                         "columnnames": ["id"],  +
-                         "columntypes": ["int4"],+
-                         "columnvalues": [4]     +
-                 }                               +
-         ]                                       +
+                     data                      
+-----------------------------------------------
+ {                                            +
+         "change": [                          +
+                 {                            +
+                         "op": "I",           +
+                         "schema": "public",  +
+                         "table": "t1",       +
+                         "colnames": ["id"],  +
+                         "coltypes": ["int4"],+
+                         "values": [4]        +
+                 }                            +
+         ]                                    +
  }
- {                                               +
-         "change": [                             +
-                 {                               +
-                         "kind": "insert",       +
-                         "schema": "public",     +
-                         "table": "s1",          +
-                         "columnnames": ["id"],  +
-                         "columntypes": ["int4"],+
-                         "columnvalues": [6]     +
-                 }                               +
-         ]                                       +
+ {                                            +
+         "change": [                          +
+                 {                            +
+                         "op": "I",           +
+                         "schema": "public",  +
+                         "table": "s1",       +
+                         "colnames": ["id"],  +
+                         "coltypes": ["int4"],+
+                         "values": [6]        +
+                 }                            +
+         ]                                    +
  }
 (2 rows)
 
@@ -185,31 +177,31 @@ insert into t3 values (9);
 insert into s1 values (10);
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1',
 	'include-table', '~^t', 'exclude-table', 't2');
-                       data                       
---------------------------------------------------
- {                                               +
-         "change": [                             +
-                 {                               +
-                         "kind": "insert",       +
-                         "schema": "public",     +
-                         "table": "t1",          +
-                         "columnnames": ["id"],  +
-                         "columntypes": ["int4"],+
-                         "columnvalues": [7]     +
-                 }                               +
-         ]                                       +
+                     data                      
+-----------------------------------------------
+ {                                            +
+         "change": [                          +
+                 {                            +
+                         "op": "I",           +
+                         "schema": "public",  +
+                         "table": "t1",       +
+                         "colnames": ["id"],  +
+                         "coltypes": ["int4"],+
+                         "values": [7]        +
+                 }                            +
+         ]                                    +
  }
- {                                               +
-         "change": [                             +
-                 {                               +
-                         "kind": "insert",       +
-                         "schema": "public",     +
-                         "table": "t3",          +
-                         "columnnames": ["id"],  +
-                         "columntypes": ["int4"],+
-                         "columnvalues": [9]     +
-                 }                               +
-         ]                                       +
+ {                                            +
+         "change": [                          +
+                 {                            +
+                         "op": "I",           +
+                         "schema": "public",  +
+                         "table": "t3",       +
+                         "colnames": ["id"],  +
+                         "coltypes": ["int4"],+
+                         "values": [9]        +
+                 }                            +
+         ]                                    +
  }
 (2 rows)
 
@@ -219,31 +211,31 @@ insert into t2 values (12);
 insert into t3 values (13);
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1',
 	'exclude-table', 't2');
-                       data                       
---------------------------------------------------
- {                                               +
-         "change": [                             +
-                 {                               +
-                         "kind": "insert",       +
-                         "schema": "public",     +
-                         "table": "t1",          +
-                         "columnnames": ["id"],  +
-                         "columntypes": ["int4"],+
-                         "columnvalues": [11]    +
-                 }                               +
-         ]                                       +
+                     data                      
+-----------------------------------------------
+ {                                            +
+         "change": [                          +
+                 {                            +
+                         "op": "I",           +
+                         "schema": "public",  +
+                         "table": "t1",       +
+                         "colnames": ["id"],  +
+                         "coltypes": ["int4"],+
+                         "values": [11]       +
+                 }                            +
+         ]                                    +
  }
- {                                               +
-         "change": [                             +
-                 {                               +
-                         "kind": "insert",       +
-                         "schema": "public",     +
-                         "table": "t3",          +
-                         "columnnames": ["id"],  +
-                         "columntypes": ["int4"],+
-                         "columnvalues": [13]    +
-                 }                               +
-         ]                                       +
+ {                                            +
+         "change": [                          +
+                 {                            +
+                         "op": "I",           +
+                         "schema": "public",  +
+                         "table": "t3",       +
+                         "colnames": ["id"],  +
+                         "coltypes": ["int4"],+
+                         "values": [13]       +
+                 }                            +
+         ]                                    +
  }
 (2 rows)
 
@@ -254,31 +246,31 @@ insert into t3 values (16);
 insert into s1 values (17);
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1',
 	'exclude-table', '~.1');
-                       data                       
---------------------------------------------------
- {                                               +
-         "change": [                             +
-                 {                               +
-                         "kind": "insert",       +
-                         "schema": "public",     +
-                         "table": "t2",          +
-                         "columnnames": ["id"],  +
-                         "columntypes": ["int4"],+
-                         "columnvalues": [15]    +
-                 }                               +
-         ]                                       +
+                     data                      
+-----------------------------------------------
+ {                                            +
+         "change": [                          +
+                 {                            +
+                         "op": "I",           +
+                         "schema": "public",  +
+                         "table": "t2",       +
+                         "colnames": ["id"],  +
+                         "coltypes": ["int4"],+
+                         "values": [15]       +
+                 }                            +
+         ]                                    +
  }
- {                                               +
-         "change": [                             +
-                 {                               +
-                         "kind": "insert",       +
-                         "schema": "public",     +
-                         "table": "t3",          +
-                         "columnnames": ["id"],  +
-                         "columntypes": ["int4"],+
-                         "columnvalues": [16]    +
-                 }                               +
-         ]                                       +
+ {                                            +
+         "change": [                          +
+                 {                            +
+                         "op": "I",           +
+                         "schema": "public",  +
+                         "table": "t3",       +
+                         "colnames": ["id"],  +
+                         "coltypes": ["int4"],+
+                         "values": [16]       +
+                 }                            +
+         ]                                    +
  }
 (2 rows)
 
@@ -289,31 +281,31 @@ insert into t3 values (20);
 insert into s1 values (21);
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1',
 	'exclude-table', '~t', 'include-table', '~.2');
-                       data                       
---------------------------------------------------
- {                                               +
-         "change": [                             +
-                 {                               +
-                         "kind": "insert",       +
-                         "schema": "public",     +
-                         "table": "t2",          +
-                         "columnnames": ["id"],  +
-                         "columntypes": ["int4"],+
-                         "columnvalues": [19]    +
-                 }                               +
-         ]                                       +
+                     data                      
+-----------------------------------------------
+ {                                            +
+         "change": [                          +
+                 {                            +
+                         "op": "I",           +
+                         "schema": "public",  +
+                         "table": "t2",       +
+                         "colnames": ["id"],  +
+                         "coltypes": ["int4"],+
+                         "values": [19]       +
+                 }                            +
+         ]                                    +
  }
- {                                               +
-         "change": [                             +
-                 {                               +
-                         "kind": "insert",       +
-                         "schema": "public",     +
-                         "table": "s1",          +
-                         "columnnames": ["id"],  +
-                         "columntypes": ["int4"],+
-                         "columnvalues": [21]    +
-                 }                               +
-         ]                                       +
+ {                                            +
+         "change": [                          +
+                 {                            +
+                         "op": "I",           +
+                         "schema": "public",  +
+                         "table": "s1",       +
+                         "colnames": ["id"],  +
+                         "coltypes": ["int4"],+
+                         "values": [21]       +
+                 }                            +
+         ]                                    +
  }
 (2 rows)
 

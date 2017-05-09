@@ -443,21 +443,19 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 	{
 		if (data->pretty_print)
 		{
-			appendStringInfoString(&colnames, "\t\t\t\"oldkeys\": {\n");
 			if (include_schema)
-				appendStringInfoString(&colnames, "\t\t\t\t\"keynames\": [");
+				appendStringInfoString(&colnames, "\t\t\t\"keynames\": [");
 			if (include_types)
-				appendStringInfoString(&coltypes, "\t\t\t\t\"keytypes\": [");
-			appendStringInfoString(&colvalues, "\t\t\t\t\"keyvalues\": [");
+				appendStringInfoString(&coltypes, "\t\t\t\"keytypes\": [");
+			appendStringInfoString(&colvalues, "\t\t\t\"oldkey\": [");
 		}
 		else
 		{
-			appendStringInfoString(&colnames, "\"oldkeys\":{");
 			if (include_schema)
 				appendStringInfoString(&colnames, "\"keynames\":[");
 			if (include_types)
 				appendStringInfoString(&coltypes, "\"keytypes\":[");
-			appendStringInfoString(&colvalues, "\"keyvalues\":[");
+			appendStringInfoString(&colvalues, "\"oldkey\":[");
 		}
 	}
 	else
@@ -465,18 +463,18 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 		if (data->pretty_print)
 		{
 			if (include_schema)
-				appendStringInfoString(&colnames, "\t\t\t\"columnnames\": [");
+				appendStringInfoString(&colnames, "\t\t\t\"colnames\": [");
 			if (include_types)
-				appendStringInfoString(&coltypes, "\t\t\t\"columntypes\": [");
-			appendStringInfoString(&colvalues, "\t\t\t\"columnvalues\": [");
+				appendStringInfoString(&coltypes, "\t\t\t\"coltypes\": [");
+			appendStringInfoString(&colvalues, "\t\t\t\"values\": [");
 		}
 		else
 		{
 			if (include_schema)
-				appendStringInfoString(&colnames, "\"columnnames\":[");
+				appendStringInfoString(&colnames, "\"colnames\":[");
 			if (include_types)
-				appendStringInfoString(&coltypes, "\"columntypes\":[");
-			appendStringInfoString(&colvalues, "\"columnvalues\":[");
+				appendStringInfoString(&coltypes, "\"coltypes\":[");
+			appendStringInfoString(&colvalues, "\"values\":[");
 		}
 	}
 
@@ -628,7 +626,6 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 			if (include_types)
 				appendStringInfoString(&coltypes, "],\n");
 			appendStringInfoString(&colvalues, "]\n");
-			appendStringInfoString(&colvalues, "\t\t\t}\n");
 		}
 		else
 		{
@@ -637,7 +634,6 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 			if (include_types)
 				appendStringInfoString(&coltypes, "],");
 			appendStringInfoChar(&colvalues, ']');
-			appendStringInfoChar(&colvalues, '}');
 		}
 	}
 	else
@@ -824,21 +820,21 @@ pg_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 	{
 		case REORDER_BUFFER_CHANGE_INSERT:
 			if (data->pretty_print)
-				appendStringInfoString(ctx->out, "\t\t\t\"kind\": \"insert\",\n");
+				appendStringInfoString(ctx->out, "\t\t\t\"op\": \"I\",\n");
 			else
-				appendStringInfoString(ctx->out, "\"kind\":\"insert\",");
+				appendStringInfoString(ctx->out, "\"op\":\"I\",");
 			break;
 		case REORDER_BUFFER_CHANGE_UPDATE:
 			if(data->pretty_print)
-				appendStringInfoString(ctx->out, "\t\t\t\"kind\": \"update\",\n");
+				appendStringInfoString(ctx->out, "\t\t\t\"op\": \"U\",\n");
 			else
-				appendStringInfoString(ctx->out, "\"kind\":\"update\",");
+				appendStringInfoString(ctx->out, "\"op\":\"U\",");
 			break;
 		case REORDER_BUFFER_CHANGE_DELETE:
 			if (data->pretty_print)
-				appendStringInfoString(ctx->out, "\t\t\t\"kind\": \"delete\",\n");
+				appendStringInfoString(ctx->out, "\t\t\t\"op\": \"D\",\n");
 			else
-				appendStringInfoString(ctx->out, "\"kind\":\"delete\",");
+				appendStringInfoString(ctx->out, "\"op\":\"D\",");
 			break;
 		default:
 			Assert(false);

@@ -60,9 +60,9 @@ CREATE TABLE emptyxact (id integer PRIMARY KEY);
 INSERT INTO emptyxact values (1);
 DROP TABLE emptyxact;
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL);
-                                                                data                                                                 
--------------------------------------------------------------------------------------------------------------------------------------
- {"change":[{"kind":"insert","schema":"public","table":"emptyxact","columnnames":["id"],"columntypes":["int4"],"columnvalues":[1]}]}
+                                                       data                                                       
+------------------------------------------------------------------------------------------------------------------
+ {"change":[{"op":"I","schema":"public","table":"emptyxact","colnames":["id"],"coltypes":["int4"],"values":[1]}]}
 (1 row)
 
 SELECT 'stop' FROM pg_drop_replication_slot('regression_slot');
