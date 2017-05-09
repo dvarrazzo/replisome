@@ -61,8 +61,6 @@ SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pre
                          "kind": "update",            +
                          "schema": "public",          +
                          "table": "t1",               +
-                         "columnnames": ["id"],       +
-                         "columntypes": ["int4"],     +
                          "columnvalues": [10],        +
                          "oldkeys": {                 +
                                  "keynames": ["id"],  +
@@ -78,8 +76,6 @@ SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pre
                          "kind": "update",            +
                          "schema": "public",          +
                          "table": "t3",               +
-                         "columnnames": ["id"],       +
-                         "columntypes": ["int4"],     +
                          "columnvalues": [30],        +
                          "oldkeys": {                 +
                                  "keynames": ["id"],  +
@@ -96,8 +92,6 @@ SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pre
                          "schema": "public",          +
                          "table": "t1",               +
                          "oldkeys": {                 +
-                                 "keynames": ["id"],  +
-                                 "keytypes": ["int4"],+
                                  "keyvalues": [10]    +
                          }                            +
                  }                                    +
@@ -110,8 +104,6 @@ SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pre
                          "schema": "public",          +
                          "table": "t3",               +
                          "oldkeys": {                 +
-                                 "keynames": ["id"],  +
-                                 "keytypes": ["int4"],+
                                  "keyvalues": [30]    +
                          }                            +
                  }                                    +

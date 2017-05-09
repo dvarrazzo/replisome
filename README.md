@@ -144,16 +144,12 @@ CONTEXTO:  slot "test_slot", output plugin "wal2json", in the change callback, a
 			"kind": "insert",
 			"schema": "public",
 			"table": "table_with_pk",
-			"columnnames": ["a", "b", "c"],
-			"columntypes": ["int4", "varchar", "timestamp"],
 			"columnvalues": [2, "Tuning", "2015-08-27 16:46:35.818038"]
 		}
 		,{
 			"kind": "insert",
 			"schema": "public",
 			"table": "table_with_pk",
-			"columnnames": ["a", "b", "c"],
-			"columntypes": ["int4", "varchar", "timestamp"],
 			"columnvalues": [3, "Replication", "2015-08-27 16:46:35.818038"]
 		}
 		,{
@@ -171,8 +167,6 @@ CONTEXTO:  slot "test_slot", output plugin "wal2json", in the change callback, a
 			"schema": "public",
 			"table": "table_with_pk",
 			"oldkeys": {
-				"keynames": ["a", "c"],
-				"keytypes": ["int4", "timestamp"],
 				"keyvalues": [2, "2015-08-27 16:46:35.818038"]
 			}
 		}
@@ -251,16 +245,12 @@ CONTEXTO:  slot "test_slot", output plugin "wal2json", in the change callback, a
 			"kind": "insert",
 			"schema": "public",
 			"table": "table_with_pk",
-			"columnnames": ["a", "b", "c"],
-			"columntypes": ["int4", "varchar", "timestamp"],
 			"columnvalues": [2, "Tuning", "2015-08-27 16:49:37.218511"]
 		}
 		,{
 			"kind": "insert",
 			"schema": "public",
 			"table": "table_with_pk",
-			"columnnames": ["a", "b", "c"],
-			"columntypes": ["int4", "varchar", "timestamp"],
 			"columnvalues": [3, "Replication", "2015-08-27 16:49:37.218511"]
 		}
 		,{
@@ -278,8 +268,6 @@ CONTEXTO:  slot "test_slot", output plugin "wal2json", in the change callback, a
 			"schema": "public",
 			"table": "table_with_pk",
 			"oldkeys": {
-				"keynames": ["a", "c"],
-				"keytypes": ["int4", "timestamp"],
 				"keyvalues": [2, "2015-08-27 16:49:37.218511"]
 			}
 		}

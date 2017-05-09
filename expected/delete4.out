@@ -59,8 +59,6 @@ SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pre
                          "schema": "public",                    +
                          "table": "table_with_unique",          +
                          "oldkeys": {                           +
-                                 "keynames": ["g", "n"],        +
-                                 "keytypes": ["float8", "bool"],+
                                  "keyvalues": [4.56, true]      +
                          }                                      +
                  }                                              +

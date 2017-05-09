@@ -44,8 +44,6 @@ SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pre
                          "kind": "insert",               +
                          "schema": "public",             +
                          "table": "xpto",                +
-                         "columnnames": ["a", "b"],      +
-                         "columntypes": ["int4", "text"],+
                          "columnvalues": [2, "smith"]    +
                  }                                       +
          ]                                               +
@@ -56,8 +54,6 @@ SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pre
                          "kind": "insert",               +
                          "schema": "public",             +
                          "table": "xpto",                +
-                         "columnnames": ["a", "b"],      +
-                         "columntypes": ["int4", "text"],+
                          "columnvalues": [3, "robert"]   +
                  }                                       +
          ]                                               +
@@ -68,24 +64,18 @@ SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pre
                          "kind": "insert",               +
                          "schema": "public",             +
                          "table": "xpto",                +
-                         "columnnames": ["a", "b"],      +
-                         "columntypes": ["int4", "text"],+
                          "columnvalues": [4, "marie"]    +
                  }                                       +
                  ,{                                      +
                          "kind": "insert",               +
                          "schema": "public",             +
                          "table": "xpto",                +
-                         "columnnames": ["a", "b"],      +
-                         "columntypes": ["int4", "text"],+
                          "columnvalues": [5, "ernesto"]  +
                  }                                       +
                  ,{                                      +
                          "kind": "insert",               +
                          "schema": "public",             +
                          "table": "xpto",                +
-                         "columnnames": ["a", "b"],      +
-                         "columntypes": ["int4", "text"],+
                          "columnvalues": [8, "francisco"]+
                  }                                       +
          ]                                               +
