@@ -2,8 +2,9 @@ MODULE_big = replisome
 
 OBJS = src/replisome.o src/includes.o src/reldata.o
 
-REGRESS = cmdline insert1 update1 update2 update3 update4 delete1 delete2 \
-		  delete3 delete4 include repschema savepoint specialvalue toast bytea
+REGRESS = --inputdir=tests \
+		insert1 cmdline update1 update2 update3 update4 delete1 delete2 \
+		delete3 delete4 include repschema savepoint specialvalue toast bytea
 
 PG_CONFIG = pg_config
 PGXS := $(shell $(PG_CONFIG) --pgxs)
