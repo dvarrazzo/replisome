@@ -419,15 +419,15 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 	{
 		if (data->pretty_print)
 		{
-			appendStringInfoString(&colnames, "\t\t\t\"columnnames\": [");
-			appendStringInfoString(&coltypes, "\t\t\t\"columntypes\": [");
-			appendStringInfoString(&colvalues, "\t\t\t\"columnvalues\": [");
+			appendStringInfoString(&colnames, "\t\t\t\"colnames\": [");
+			appendStringInfoString(&coltypes, "\t\t\t\"coltypes\": [");
+			appendStringInfoString(&colvalues, "\t\t\t\"values\": [");
 		}
 		else
 		{
-			appendStringInfoString(&colnames, "\"columnnames\":[");
-			appendStringInfoString(&coltypes, "\"columntypes\":[");
-			appendStringInfoString(&colvalues, "\"columnvalues\":[");
+			appendStringInfoString(&colnames, "\"colnames\":[");
+			appendStringInfoString(&coltypes, "\"coltypes\":[");
+			appendStringInfoString(&colvalues, "\"values\":[");
 		}
 	}
 

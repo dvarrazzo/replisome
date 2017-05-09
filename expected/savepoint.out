@@ -24,71 +24,71 @@ RELEASE SAVEPOINT sp1;
 INSERT INTO xpto (b) VALUES('francisco');
 END;
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'include-xids', '0', 'pretty-print', '1');
-                           data                           
-----------------------------------------------------------
- {                                                       +
+                         data                          
+-------------------------------------------------------
+ {                                                    +
          "change": [
-                 {                                       +
-                         "op": "I",                      +
-                         "schema": "public",             +
-                         "table": "xpto",                +
-                         "columnnames": ["a", "b"],      +
-                         "columntypes": ["int4", "text"],+
-                         "columnvalues": [1, "john"]     +
+                 {                                    +
+                         "op": "I",                   +
+                         "schema": "public",          +
+                         "table": "xpto",             +
+                         "colnames": ["a", "b"],      +
+                         "coltypes": ["int4", "text"],+
+                         "values": [1, "john"]        +
                  }
-         ]                                               +
+         ]                                            +
  }
- {                                                       +
+ {                                                    +
          "change": [
-                 {                                       +
-                         "op": "I",                      +
-                         "schema": "public",             +
-                         "table": "xpto",                +
-                         "columnnames": ["a", "b"],      +
-                         "columntypes": ["int4", "text"],+
-                         "columnvalues": [2, "smith"]    +
+                 {                                    +
+                         "op": "I",                   +
+                         "schema": "public",          +
+                         "table": "xpto",             +
+                         "colnames": ["a", "b"],      +
+                         "coltypes": ["int4", "text"],+
+                         "values": [2, "smith"]       +
                  }
-         ]                                               +
+         ]                                            +
  }
- {                                                       +
+ {                                                    +
          "change": [
-                 {                                       +
-                         "op": "I",                      +
-                         "schema": "public",             +
-                         "table": "xpto",                +
-                         "columnnames": ["a", "b"],      +
-                         "columntypes": ["int4", "text"],+
-                         "columnvalues": [3, "robert"]   +
+                 {                                    +
+                         "op": "I",                   +
+                         "schema": "public",          +
+                         "table": "xpto",             +
+                         "colnames": ["a", "b"],      +
+                         "coltypes": ["int4", "text"],+
+                         "values": [3, "robert"]      +
                  }
-         ]                                               +
+         ]                                            +
  }
- {                                                       +
+ {                                                    +
          "change": [
-                 {                                       +
-                         "op": "I",                      +
-                         "schema": "public",             +
-                         "table": "xpto",                +
-                         "columnnames": ["a", "b"],      +
-                         "columntypes": ["int4", "text"],+
-                         "columnvalues": [4, "marie"]    +
+                 {                                    +
+                         "op": "I",                   +
+                         "schema": "public",          +
+                         "table": "xpto",             +
+                         "colnames": ["a", "b"],      +
+                         "coltypes": ["int4", "text"],+
+                         "values": [4, "marie"]       +
                  }
-                 ,{                                      +
-                         "op": "I",                      +
-                         "schema": "public",             +
-                         "table": "xpto",                +
-                         "columnnames": ["a", "b"],      +
-                         "columntypes": ["int4", "text"],+
-                         "columnvalues": [5, "ernesto"]  +
+                 ,{                                   +
+                         "op": "I",                   +
+                         "schema": "public",          +
+                         "table": "xpto",             +
+                         "colnames": ["a", "b"],      +
+                         "coltypes": ["int4", "text"],+
+                         "values": [5, "ernesto"]     +
                  }
-                 ,{                                      +
-                         "op": "I",                      +
-                         "schema": "public",             +
-                         "table": "xpto",                +
-                         "columnnames": ["a", "b"],      +
-                         "columntypes": ["int4", "text"],+
-                         "columnvalues": [8, "francisco"]+
+                 ,{                                   +
+                         "op": "I",                   +
+                         "schema": "public",          +
+                         "table": "xpto",             +
+                         "colnames": ["a", "b"],      +
+                         "coltypes": ["int4", "text"],+
+                         "values": [8, "francisco"]   +
                  }
-         ]                                               +
+         ]                                            +
  }
 (14 rows)
 

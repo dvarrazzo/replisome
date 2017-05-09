@@ -139,25 +139,25 @@ CONTEXTO:  slot "test_slot", output plugin "wal2json", in the change callback, a
 			"op": "I",
 			"schema": "public",
 			"table": "table_with_pk",
-			"columnnames": ["a", "b", "c"],
-			"columntypes": ["int4", "varchar", "timestamp"],
-			"columnvalues": [1, "Backup and Restore", "2015-08-27 16:46:35.818038"]
+			"colnames": ["a", "b", "c"],
+			"coltypes": ["int4", "varchar", "timestamp"],
+			"values": [1, "Backup and Restore", "2015-08-27 16:46:35.818038"]
 		}
 		,{
 			"op": "I",
 			"schema": "public",
 			"table": "table_with_pk",
-			"columnnames": ["a", "b", "c"],
-			"columntypes": ["int4", "varchar", "timestamp"],
-			"columnvalues": [2, "Tuning", "2015-08-27 16:46:35.818038"]
+			"colnames": ["a", "b", "c"],
+			"coltypes": ["int4", "varchar", "timestamp"],
+			"values": [2, "Tuning", "2015-08-27 16:46:35.818038"]
 		}
 		,{
 			"op": "I",
 			"schema": "public",
 			"table": "table_with_pk",
-			"columnnames": ["a", "b", "c"],
-			"columntypes": ["int4", "varchar", "timestamp"],
-			"columnvalues": [3, "Replication", "2015-08-27 16:46:35.818038"]
+			"colnames": ["a", "b", "c"],
+			"coltypes": ["int4", "varchar", "timestamp"],
+			"values": [3, "Replication", "2015-08-27 16:46:35.818038"]
 		}
 		,{
 			"op": "D",
@@ -183,9 +183,9 @@ CONTEXTO:  slot "test_slot", output plugin "wal2json", in the change callback, a
 			"op": "I",
 			"schema": "public",
 			"table": "table_without_pk",
-			"columnnames": ["a", "b", "c"],
-			"columntypes": ["int4", "numeric", "text"],
-			"columnvalues": [1, 2.34, "Tapir"]
+			"colnames": ["a", "b", "c"],
+			"coltypes": ["int4", "numeric", "text"],
+			"values": [1, 2.34, "Tapir"]
 		}
 	]
 }
@@ -247,25 +247,25 @@ CONTEXTO:  slot "test_slot", output plugin "wal2json", in the change callback, a
 			"op": "I",
 			"schema": "public",
 			"table": "table_with_pk",
-			"columnnames": ["a", "b", "c"],
-			"columntypes": ["int4", "varchar", "timestamp"],
-			"columnvalues": [1, "Backup and Restore", "2015-08-27 16:49:37.218511"]
+			"colnames": ["a", "b", "c"],
+			"coltypes": ["int4", "varchar", "timestamp"],
+			"values": [1, "Backup and Restore", "2015-08-27 16:49:37.218511"]
 		}
 		,{
 			"op": "I",
 			"schema": "public",
 			"table": "table_with_pk",
-			"columnnames": ["a", "b", "c"],
-			"columntypes": ["int4", "varchar", "timestamp"],
-			"columnvalues": [2, "Tuning", "2015-08-27 16:49:37.218511"]
+			"colnames": ["a", "b", "c"],
+			"coltypes": ["int4", "varchar", "timestamp"],
+			"values": [2, "Tuning", "2015-08-27 16:49:37.218511"]
 		}
 		,{
 			"op": "I",
 			"schema": "public",
 			"table": "table_with_pk",
-			"columnnames": ["a", "b", "c"],
-			"columntypes": ["int4", "varchar", "timestamp"],
-			"columnvalues": [3, "Replication", "2015-08-27 16:49:37.218511"]
+			"colnames": ["a", "b", "c"],
+			"coltypes": ["int4", "varchar", "timestamp"],
+			"values": [3, "Replication", "2015-08-27 16:49:37.218511"]
 		}
 		,{
 			"op": "D",
@@ -291,9 +291,9 @@ CONTEXTO:  slot "test_slot", output plugin "wal2json", in the change callback, a
 			"op": "I",
 			"schema": "public",
 			"table": "table_without_pk",
-			"columnnames": ["a", "b", "c"],
-			"columntypes": ["int4", "numeric", "text"],
-			"columnvalues": [1, 2.34, "Tapir"]
+			"colnames": ["a", "b", "c"],
+			"coltypes": ["int4", "numeric", "text"],
+			"values": [1, 2.34, "Tapir"]
 		}
 	]
 }
