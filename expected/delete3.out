@@ -92,7 +92,7 @@ SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'inc
  {                                                                                                                                                                                                                               +
          "change": [
                  {                                                                                                                                                                                                               +
-                         "op": "delete",                                                                                                                                                                                         +
+                         "op": "D",                                                                                                                                                                                              +
                          "schema": "public",                                                                                                                                                                                     +
                          "table": "table_with_pk",                                                                                                                                                                               +
                          "oldkeys": {                                                                                                                                                                                            +
@@ -106,7 +106,7 @@ SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'inc
  {                                                                                                                                                                                                                               +
          "change": [
                  {                                                                                                                                                                                                               +
-                         "op": "delete",                                                                                                                                                                                         +
+                         "op": "D",                                                                                                                                                                                              +
                          "schema": "public",                                                                                                                                                                                     +
                          "table": "table_with_pk",                                                                                                                                                                               +
                          "oldkeys": {                                                                                                                                                                                            +
@@ -128,7 +128,7 @@ SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'inc
  {                                                                                                                                                                                                                               +
          "change": [
                  {                                                                                                                                                                                                               +
-                         "op": "delete",                                                                                                                                                                                         +
+                         "op": "D",                                                                                                                                                                                              +
                          "schema": "public",                                                                                                                                                                                     +
                          "table": "table_without_pk",                                                                                                                                                                            +
                          "oldkeys": {                                                                                                                                                                                            +
@@ -150,7 +150,7 @@ SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'inc
  {                                                                                                                                                                                                                               +
          "change": [
                  {                                                                                                                                                                                                               +
-                         "op": "delete",                                                                                                                                                                                         +
+                         "op": "D",                                                                                                                                                                                              +
                          "schema": "public",                                                                                                                                                                                     +
                          "table": "table_with_unique",                                                                                                                                                                           +
                          "oldkeys": {                                                                                                                                                                                            +

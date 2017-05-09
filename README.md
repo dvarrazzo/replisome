@@ -136,7 +136,7 @@ CONTEXTO:  slot "test_slot", output plugin "wal2json", in the change callback, a
 	"xid": 34227,
 	"change": [
 		{
-			"op": "insert",
+			"op": "I",
 			"schema": "public",
 			"table": "table_with_pk",
 			"columnnames": ["a", "b", "c"],
@@ -144,7 +144,7 @@ CONTEXTO:  slot "test_slot", output plugin "wal2json", in the change callback, a
 			"columnvalues": [1, "Backup and Restore", "2015-08-27 16:46:35.818038"]
 		}
 		,{
-			"op": "insert",
+			"op": "I",
 			"schema": "public",
 			"table": "table_with_pk",
 			"columnnames": ["a", "b", "c"],
@@ -152,7 +152,7 @@ CONTEXTO:  slot "test_slot", output plugin "wal2json", in the change callback, a
 			"columnvalues": [2, "Tuning", "2015-08-27 16:46:35.818038"]
 		}
 		,{
-			"op": "insert",
+			"op": "I",
 			"schema": "public",
 			"table": "table_with_pk",
 			"columnnames": ["a", "b", "c"],
@@ -160,7 +160,7 @@ CONTEXTO:  slot "test_slot", output plugin "wal2json", in the change callback, a
 			"columnvalues": [3, "Replication", "2015-08-27 16:46:35.818038"]
 		}
 		,{
-			"op": "delete",
+			"op": "D",
 			"schema": "public",
 			"table": "table_with_pk",
 			"oldkeys": {
@@ -170,7 +170,7 @@ CONTEXTO:  slot "test_slot", output plugin "wal2json", in the change callback, a
 			}
 		}
 		,{
-			"op": "delete",
+			"op": "D",
 			"schema": "public",
 			"table": "table_with_pk",
 			"oldkeys": {
@@ -180,7 +180,7 @@ CONTEXTO:  slot "test_slot", output plugin "wal2json", in the change callback, a
 			}
 		}
 		,{
-			"op": "insert",
+			"op": "I",
 			"schema": "public",
 			"table": "table_without_pk",
 			"columnnames": ["a", "b", "c"],
@@ -244,7 +244,7 @@ CONTEXTO:  slot "test_slot", output plugin "wal2json", in the change callback, a
 	"xid": 34232,
 	"change": [
 		{
-			"op": "insert",
+			"op": "I",
 			"schema": "public",
 			"table": "table_with_pk",
 			"columnnames": ["a", "b", "c"],
@@ -252,7 +252,7 @@ CONTEXTO:  slot "test_slot", output plugin "wal2json", in the change callback, a
 			"columnvalues": [1, "Backup and Restore", "2015-08-27 16:49:37.218511"]
 		}
 		,{
-			"op": "insert",
+			"op": "I",
 			"schema": "public",
 			"table": "table_with_pk",
 			"columnnames": ["a", "b", "c"],
@@ -260,7 +260,7 @@ CONTEXTO:  slot "test_slot", output plugin "wal2json", in the change callback, a
 			"columnvalues": [2, "Tuning", "2015-08-27 16:49:37.218511"]
 		}
 		,{
-			"op": "insert",
+			"op": "I",
 			"schema": "public",
 			"table": "table_with_pk",
 			"columnnames": ["a", "b", "c"],
@@ -268,7 +268,7 @@ CONTEXTO:  slot "test_slot", output plugin "wal2json", in the change callback, a
 			"columnvalues": [3, "Replication", "2015-08-27 16:49:37.218511"]
 		}
 		,{
-			"op": "delete",
+			"op": "D",
 			"schema": "public",
 			"table": "table_with_pk",
 			"oldkeys": {
@@ -278,7 +278,7 @@ CONTEXTO:  slot "test_slot", output plugin "wal2json", in the change callback, a
 			}
 		}
 		,{
-			"op": "delete",
+			"op": "D",
 			"schema": "public",
 			"table": "table_with_pk",
 			"oldkeys": {
@@ -288,7 +288,7 @@ CONTEXTO:  slot "test_slot", output plugin "wal2json", in the change callback, a
 			}
 		}
 		,{
-			"op": "insert",
+			"op": "I",
 			"schema": "public",
 			"table": "table_without_pk",
 			"columnnames": ["a", "b", "c"],

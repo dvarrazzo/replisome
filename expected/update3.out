@@ -90,7 +90,7 @@ SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'inc
  {                                                                                                                                                                                                                               +
          "change": [
                  {                                                                                                                                                                                                               +
-                         "op": "update",                                                                                                                                                                                         +
+                         "op": "U",                                                                                                                                                                                              +
                          "schema": "public",                                                                                                                                                                                     +
                          "table": "table_with_pk",                                                                                                                                                                               +
                          "columnnames": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p"],                                                                                                        +
@@ -115,7 +115,7 @@ SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'inc
  {                                                                                                                                                                                                                               +
          "change": [
                  {                                                                                                                                                                                                               +
-                         "op": "update",                                                                                                                                                                                         +
+                         "op": "U",                                                                                                                                                                                              +
                          "schema": "public",                                                                                                                                                                                     +
                          "table": "table_without_pk",                                                                                                                                                                            +
                          "columnnames": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p"],                                                                                                        +
@@ -140,7 +140,7 @@ SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'inc
  {                                                                                                                                                                                                                               +
          "change": [
                  {                                                                                                                                                                                                               +
-                         "op": "update",                                                                                                                                                                                         +
+                         "op": "U",                                                                                                                                                                                              +
                          "schema": "public",                                                                                                                                                                                     +
                          "table": "table_with_unique",                                                                                                                                                                           +
                          "columnnames": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p"],                                                                                                        +
