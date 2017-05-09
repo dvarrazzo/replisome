@@ -402,17 +402,15 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 	{
 		if (data->pretty_print)
 		{
-			appendStringInfoString(&colnames, "\t\t\t\"oldkeys\": {\n");
-			appendStringInfoString(&colnames, "\t\t\t\t\"keynames\": [");
-			appendStringInfoString(&coltypes, "\t\t\t\t\"keytypes\": [");
-			appendStringInfoString(&colvalues, "\t\t\t\t\"keyvalues\": [");
+			appendStringInfoString(&colnames, "\t\t\t\"keynames\": [");
+			appendStringInfoString(&coltypes, "\t\t\t\"keytypes\": [");
+			appendStringInfoString(&colvalues, "\t\t\t\"oldkey\": [");
 		}
 		else
 		{
-			appendStringInfoString(&colnames, "\"oldkeys\":{");
 			appendStringInfoString(&colnames, "\"keynames\":[");
 			appendStringInfoString(&coltypes, "\"keytypes\":[");
-			appendStringInfoString(&colvalues, "\"keyvalues\":[");
+			appendStringInfoString(&colvalues, "\"oldkey\":[");
 		}
 	}
 	else
@@ -577,7 +575,6 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 			if (data->include_types)
 				appendStringInfoString(&coltypes, "],\n");
 			appendStringInfoString(&colvalues, "]\n");
-			appendStringInfoString(&colvalues, "\t\t\t}\n");
 		}
 		else
 		{
@@ -585,7 +582,6 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 			if (data->include_types)
 				appendStringInfoString(&coltypes, "],");
 			appendStringInfoChar(&colvalues, ']');
-			appendStringInfoChar(&colvalues, '}');
 		}
 	}
 	else

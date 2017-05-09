@@ -79,29 +79,27 @@ DELETE FROM table_with_unique WHERE b = 1;
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'include-xids', '0', 'pretty-print', '1');
 WARNING:  table "table_without_pk" without primary key or replica identity is nothing
 WARNING:  table "table_with_unique" without primary key or replica identity is nothing
-                                 data                                  
------------------------------------------------------------------------
- {                                                                    +
+                             data                              
+---------------------------------------------------------------
+ {                                                            +
          "change": [
-         ]                                                            +
+         ]                                                    +
  }
- {                                                                    +
+ {                                                            +
          "change": [
-                 {                                                    +
-                         "op": "D",                                   +
-                         "schema": "public",                          +
-                         "table": "table_with_pk",                    +
-                         "oldkeys": {                                 +
-                                 "keynames": ["b", "c", "d"],         +
-                                 "keytypes": ["int2", "int4", "int8"],+
-                                 "keyvalues": [1, 2, 3]               +
-                         }                                            +
+                 {                                            +
+                         "op": "D",                           +
+                         "schema": "public",                  +
+                         "table": "table_with_pk",            +
+                         "keynames": ["b", "c", "d"],         +
+                         "keytypes": ["int2", "int4", "int8"],+
+                         "oldkey": [1, 2, 3]                  +
                  }
-         ]                                                            +
+         ]                                                    +
  }
- {                                                                    +
+ {                                                            +
          "change": [
-         ]                                                            +
+         ]                                                    +
  }
 (7 rows)
 
