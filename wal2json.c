@@ -111,7 +111,7 @@ pg_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt, bool is
 	data->pretty_print = false;
 	data->write_in_chunks = false;
 	data->include_lsn = false;
-	data->skip_empty_xacts = false;
+	data->skip_empty_xacts = true;
 
 	data->nr_changes = 0;
 

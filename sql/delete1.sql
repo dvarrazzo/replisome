@@ -85,14 +85,14 @@ DELETE FROM table_with_pk WHERE b = 1;
 -- DELETE: unique
 DELETE FROM table_with_unique WHERE b = 1;
 
-SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1');
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1', 'skip-empty-xacts', '0');
 
 -- Again, hiding empty xacts
 DELETE FROM table_without_pk WHERE b = 2;
 DELETE FROM table_with_pk WHERE b = 2;
 DELETE FROM table_with_unique WHERE b = 2;
 
-SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1', 'skip-empty-xacts', '1');
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'pretty-print', '1');
 
 
 SELECT 'stop' FROM pg_drop_replication_slot('regression_slot');
