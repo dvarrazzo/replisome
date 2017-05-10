@@ -19,13 +19,15 @@ class ScriptError(Exception):
 
 
 class ReplisomeReceiver(object):
-    def __init__(self, slot, dsn, plugin, message_cb=None):
+    def __init__(self, slot, dsn, plugin="replisome", message_cb=None):
         self.slot = slot
         self.dsn = dsn
         self.connection = None
         self.plugin = plugin
         if message_cb:
             self.message_cb = message_cb
+
+        self._chunks = []
 
     def start(self, create=False):
         self.connection = self.create_connection()
@@ -36,15 +38,23 @@ class ReplisomeReceiver(object):
             logger.info('creating replication slot "%s"', self.slot)
             cur.create_replication_slot(self.slot, output_plugin=self.plugin)
 
+        # NOTE: it is currently necessary to write in chunk even if this
+        # results in messages containing invalid JSON (which are assembled
+        # by consume()). If we don't do so, it seems postgres fails to flush
+        # the lsn correctly. I suspect the problem is that we reset the lsn
+        # at the start of the message: if the output is chunked we receive
+        # at least a couple of messages within the same transaction so we
+        # end up being correct. If the message encompasses the entire
+        # transaction, the lsn is reset at the beginning of the transction
+        # already seen, so some records are sent repeatedly.
         try:
-            # cur.execute("IDENTIFY_SYSTEM")
-            # pos = cur.fetchone()[2]
-            pos = self.get_start()
+            pos = 0
             logger.info(
                 'starting streaming from slot "%s" at %s', self.slot, pos)
             cur.start_replication(
-                self.slot, start_lsn=pos, decode=True)
-            cur.consume_stream(self.consume)
+                self.slot, start_lsn=pos, decode=False,
+                options={'pretty-print': '0', 'write-in-chunks': '1'})
+            cur.consume_stream(self.consume, keepalive_interval=1)
         finally:
             self.close()
 
@@ -62,19 +72,24 @@ class ReplisomeReceiver(object):
             return rec[0]
 
     def consume(self, msg):
-        logger.debug(
-            u"message received: %s%s",
-            msg.payload[:50], len(msg.payload) > 50 and '...' or '')
-        obj = json.loads(msg.payload)
-        self.message_cb(obj)
-
         cnn = msg.cursor.connection
         if cnn.notices:
             for n in cnn.notices:
                 logger.debug("server: %s", n.rstrip())
             del cnn.notices[:]
 
-        logger.debug("sending feedback: %s", msg.data_start)
+        logger.debug(
+            u"message received:\n\t%r\n\t%s%s",
+            msg, msg.payload[:50], len(msg.payload) > 50 and '...' or '')
+        chunk = msg.payload
+        self._chunks.append(chunk)
+
+        if chunk == ']}' or chunk == '\t]\n}':
+            obj = json.loads(''.join(self._chunks))
+            del self._chunks[:]
+            self.message_cb(obj)
+
+        logger.debug("sending feedback: %X", msg.data_start)
         msg.cursor.send_feedback(flush_lsn=msg.data_start)
 
     def message_cb(self, obj):
@@ -202,8 +217,7 @@ def main():
 
     sa = SchemaApplier(opt.tgt_dsn)
     rr = ReplisomeReceiver(
-        opt.slot, opt.src_dsn, plugin=opt.plugin,
-        message_cb=sa.process_message)
+        opt.slot, opt.src_dsn, message_cb=sa.process_message)
     try:
         rr.start(create=opt.create_slot)
     finally:
@@ -229,9 +243,6 @@ def parse_cmdline():
     parser.add_argument(
         '--drop-slot', action='store_true', default=False,
         help="drop the slot after streaming")
-    parser.add_argument(
-        '--plugin', default="replisome",
-        help="logical decoding plugin to use [default: %(default)s]")
     parser.add_argument(
         '--verbose', action='store_true',
         help="print more log messages")
