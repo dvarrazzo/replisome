@@ -15,6 +15,7 @@
 
 #include "replisome.h"
 #include "reldata.h"
+#include "jsonbutils.h"
 
 #include "access/sysattr.h"
 
@@ -56,6 +57,8 @@ static void rs_decode_change(LogicalDecodingContext *ctx,
 
 static void output_begin(LogicalDecodingContext *ctx, JsonDecodingData *data,
 		ReorderBufferTXN *txn, bool last_write);
+void complete_table_details(JsonRelationEntry *entry, Relation relation,
+		InclusionCommand *chosen_by);
 
 void
 _PG_init(void)
@@ -414,7 +417,7 @@ quote_escape_json(StringInfo buf, const char *val)
  * hasreplident: does this tuple has an associated replica identity?
  */
 static void
-tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tuple, TupleDesc indexdesc, bool replident, bool hasreplident, bool include_schema)
+tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tuple, TupleDesc indexdesc, bool replident, bool hasreplident, bool include_schema, JsonRelationEntry *entry)
 {
 	JsonDecodingData	*data;
 	int					natt;
@@ -499,6 +502,11 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 		/* Do not print dropped or system columns */
 		if (attr->attisdropped || attr->attnum < 0)
 			continue;
+
+		/* If there is a selection of columns skip the one not selected */
+		if (entry->columns && !bms_is_member(natt, entry->columns)) {
+			continue;
+		}
 
 		/* Search indexed columns in whole heap tuple */
 		if (indexdesc != NULL)
@@ -676,17 +684,20 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 
 /* Print columns information */
 static void
-columns_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tuple, bool hasreplident, bool include_schema)
+columns_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tuple, bool hasreplident, JsonRelationEntry *entry)
 {
-	tuple_to_stringinfo(ctx, tupdesc, tuple, NULL, false, hasreplident, include_schema);
+	bool include_schema = !entry->names_emitted;
+	tuple_to_stringinfo(ctx, tupdesc, tuple, NULL, false, hasreplident, include_schema, entry);
 }
 
 /* Print replica identity information */
 static void
-identity_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tuple, TupleDesc indexdesc, bool include_schema)
+identity_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tuple, TupleDesc indexdesc, JsonRelationEntry *entry)
 {
+	bool include_schema = !entry->key_emitted;
+
 	/* hasreplident=false parameter does not matter */
-	tuple_to_stringinfo(ctx, tupdesc, tuple, indexdesc, true, false, include_schema);
+	tuple_to_stringinfo(ctx, tupdesc, tuple, indexdesc, true, false, include_schema, entry);
 }
 
 /* Callback for individual changed tuples */
@@ -715,11 +726,14 @@ rs_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 		return;
 	}
 	else if (!entry->include) {
-		entry->include = inc_should_emit(data->commands, relation);
-		if (!entry->include)
-		{
+		InclusionCommand *chosen_by;
+		entry->include = inc_should_emit(data->commands, relation, &chosen_by);
+		if (!entry->include) {
 			entry->exclude = true;
 			return;
+		}
+		else {
+			complete_table_details(entry, relation, chosen_by);
 		}
 	}
 
@@ -858,12 +872,12 @@ rs_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 	{
 		case REORDER_BUFFER_CHANGE_INSERT:
 			/* Print the new tuple */
-			columns_to_stringinfo(ctx, tupdesc, &change->data.tp.newtuple->tuple, false, !entry->names_emitted);
+			columns_to_stringinfo(ctx, tupdesc, &change->data.tp.newtuple->tuple, false, entry);
 			entry->names_emitted = true;
 			break;
 		case REORDER_BUFFER_CHANGE_UPDATE:
 			/* Print the new tuple */
-			columns_to_stringinfo(ctx, tupdesc, &change->data.tp.newtuple->tuple, true, !entry->names_emitted);
+			columns_to_stringinfo(ctx, tupdesc, &change->data.tp.newtuple->tuple, true, entry);
 			entry->names_emitted = true;
 
 			/*
@@ -883,18 +897,18 @@ rs_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 				if (indexrel != NULL)
 				{
 					indexdesc = RelationGetDescr(indexrel);
-					identity_to_stringinfo(ctx, tupdesc, &change->data.tp.newtuple->tuple, indexdesc, !entry->key_emitted);
+					identity_to_stringinfo(ctx, tupdesc, &change->data.tp.newtuple->tuple, indexdesc, entry);
 					RelationClose(indexrel);
 				}
 				else
 				{
-					identity_to_stringinfo(ctx, tupdesc, &change->data.tp.newtuple->tuple, NULL, !entry->key_emitted);
+					identity_to_stringinfo(ctx, tupdesc, &change->data.tp.newtuple->tuple, NULL, entry);
 				}
 			}
 			else
 			{
 				elog(DEBUG1, "old tuple is not null");
-				identity_to_stringinfo(ctx, tupdesc, &change->data.tp.oldtuple->tuple, NULL, !entry->key_emitted);
+				identity_to_stringinfo(ctx, tupdesc, &change->data.tp.oldtuple->tuple, NULL, entry);
 			}
 			entry->key_emitted = true;
 			break;
@@ -905,12 +919,12 @@ rs_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 			if (indexrel != NULL)
 			{
 				indexdesc = RelationGetDescr(indexrel);
-				identity_to_stringinfo(ctx, tupdesc, &change->data.tp.oldtuple->tuple, indexdesc, !entry->key_emitted);
+				identity_to_stringinfo(ctx, tupdesc, &change->data.tp.oldtuple->tuple, indexdesc, entry);
 				RelationClose(indexrel);
 			}
 			else
 			{
-				identity_to_stringinfo(ctx, tupdesc, &change->data.tp.oldtuple->tuple, NULL, !entry->key_emitted);
+				identity_to_stringinfo(ctx, tupdesc, &change->data.tp.oldtuple->tuple, NULL, entry);
 			}
 			entry->key_emitted = true;
 
@@ -935,4 +949,69 @@ rs_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 reset_ctx:
 	MemoryContextSwitchTo(old);
 	MemoryContextReset(data->context);
+}
+
+void
+complete_table_details(JsonRelationEntry *entry, Relation relation, InclusionCommand *chosen_by)
+{
+	TupleDesc tupdesc;
+	Form_pg_attribute attr;
+	int natt;
+
+	if (!chosen_by)
+		return;
+
+	tupdesc = RelationGetDescr(relation);
+
+	if (chosen_by->columns) {
+		int i, ncols;
+		ncols = jbu_array_len(chosen_by->columns);
+		for (i = 0; i < ncols; i ++) {
+			char *want = jbu_getitem_str(chosen_by->columns, i);
+
+			for (natt = 0; natt < tupdesc->natts; natt++) {
+				attr = tupdesc->attrs[natt];
+				if (attr->attisdropped || attr->attnum < 0)
+					continue;
+
+				if (strcmp(NameStr(attr->attname), want) == 0) {
+					elog(DEBUG1, "want column %s is the number %i",
+						want, natt);
+					entry->columns = bms_add_member(entry->columns, natt);
+					break;
+				}
+			}
+		}
+	}
+
+	if (chosen_by->skip_columns) {
+		int i, ncols;
+
+		/* Select all the valid columns */
+		for (natt = 0; natt < tupdesc->natts; natt++) {
+			attr = tupdesc->attrs[natt];
+			if (attr->attisdropped || attr->attnum < 0)
+				continue;
+
+			entry->columns = bms_add_member(entry->columns, natt);
+		}
+
+		ncols = jbu_array_len(chosen_by->skip_columns);
+		for (i = 0; i < ncols; i ++) {
+			char *want = jbu_getitem_str(chosen_by->skip_columns, i);
+
+			for (natt = 0; natt < tupdesc->natts; natt++) {
+				attr = tupdesc->attrs[natt];
+				if (attr->attisdropped || attr->attnum < 0)
+					continue;
+
+				if (strcmp(NameStr(attr->attname), want) == 0) {
+					elog(DEBUG1, "unwanted column %s is the number %i",
+						want, natt);
+					entry->columns = bms_del_member(entry->columns, natt);
+					break;
+				}
+			}
+		}
+	}
 }
