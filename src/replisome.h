@@ -7,7 +7,7 @@
 
 #include "includes.h"
 
-typedef struct
+typedef struct JsonDecodingData
 {
 	MemoryContext context;
 	bool		include_xids;		/* include transaction ids */

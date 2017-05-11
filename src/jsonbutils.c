@@ -44,9 +44,6 @@ jbu_getattr_str(Datum jsonb, const char *attr)
 		rv = TextDatumGetCString(drv);
 		pfree(DatumGetPointer(drv));
 	}
-	else {
-		elog(DEBUG1, "json attr %s not found", attr);
-	}
 
 	pfree(DatumGetPointer(dattr));
 	return rv;
@@ -61,9 +58,6 @@ jbu_getattr_obj(Datum jsonb, const char *attr)
 
 	if (DatumGetBool(DirectFunctionCall2(jsonb_exists, jsonb, dattr))) {
 		rv = DirectFunctionCall2(jsonb_object_field, jsonb, dattr);
-	}
-	else {
-		elog(DEBUG1, "json attr %s not found", attr);
 	}
 
 	pfree(DatumGetPointer(dattr));

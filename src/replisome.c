@@ -426,9 +426,16 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 	char				*comma = "";
 
 	bool				include_types;
+	int					*attrlist;
+	int					*pattr;
 
 	data = ctx->output_plugin_private;
 	include_types = include_schema && data->include_types;
+
+	if (replident && entry->keyidxs)
+		attrlist = entry->keyidxs;
+	else
+		attrlist = entry->colidxs;
 
 	initStringInfo(&colnames);
 	if (include_types)
@@ -480,7 +487,7 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 	}
 
 	/* Print column information (name, type, value) */
-	for (natt = 0; natt < tupdesc->natts; natt++)
+	for (pattr = attrlist; (natt = *pattr) >= 0; pattr++)
 	{
 		Form_pg_attribute	attr;		/* the attribute itself */
 		Oid					typid;		/* type of current attribute */
@@ -495,37 +502,6 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 
 		attr = tupdesc->attrs[natt];
 
-		elog(DEBUG1, "attribute \"%s\" (%d/%d)", NameStr(attr->attname), natt, tupdesc->natts);
-
-		/* Do not print dropped or system columns */
-		if (attr->attisdropped || attr->attnum < 0)
-			continue;
-
-		/* If there is a selection of columns skip the one not selected */
-		if (entry->columns && !bms_is_member(natt, entry->columns)) {
-			elog(DEBUG1,
-				"attribute \"%s\" ignored by column selection",
-			NameStr(attr->attname));
-			continue;
-		}
-
-		/* Search indexed columns in whole heap tuple */
-		if (indexdesc != NULL)
-		{
-			int		j;
-			bool	found_col = false;
-
-			for (j = 0; j < indexdesc->natts; j++)
-			{
-				if (strcmp(NameStr(attr->attname), NameStr(indexdesc->attrs[j]->attname)) == 0)
-					found_col = true;
-			}
-
-			/* Print only indexed columns */
-			if (!found_col)
-				continue;
-		}
-
 		typid = attr->atttypid;
 
 		/* Figure out type name */
@@ -539,6 +515,9 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 
 		/* Get Datum from tuple */
 		origval = heap_getattr(tuple, natt + 1, tupdesc, &isnull);
+
+		/* XXX these checks should be dropped.
+		 * We don't emit different columns according to the record content.  */
 
 		/* Skip nulls iif printing key/identity */
 		if (isnull && replident)
@@ -717,6 +696,11 @@ rs_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 
 	AssertVariableIsOfType(&rs_decode_change, LogicalDecodeChangeCB);
 
+	/* We are currently in the transaction context, so we cannot allocate here
+	 * information that should be retrieved in later transaction, e.g. the
+	 * informations per table. So switch to the whole decoder context */
+	old = MemoryContextSwitchTo(ctx->context);
+
 	data = ctx->output_plugin_private;
 
 	/* Look up or insert a new entry in the cache */
@@ -724,17 +708,19 @@ rs_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 
 	/* check if we have to emit this table */
 	if (entry->exclude) {
-		return;
+		goto reset_ctx;
 	}
 	else if (!entry->include) {
-		InclusionCommand *chosen_by;
-		entry->include = inc_should_emit(data->commands, relation, &chosen_by);
+		entry->include = inc_should_emit(
+			data->commands, relation, &entry->chosen_by);
 		if (!entry->include) {
 			entry->exclude = true;
-			return;
+			goto reset_ctx;
 		}
 		else {
-			reldata_complete(entry, relation, chosen_by);
+			/* Make sure rd_replidindex is set */
+			RelationGetIndexList(relation);
+			reldata_complete(entry, relation, data);
 		}
 	}
 
@@ -742,9 +728,10 @@ rs_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 	tupdesc = RelationGetDescr(relation);
 
 	/* Avoid leaking memory by using and resetting our own context */
-	old = MemoryContextSwitchTo(data->context);
+	MemoryContextSwitchTo(data->context);
 
 	/* Make sure rd_replidindex is set */
+	/* TODO drop it from here, probably needed only on reldata_complete */
 	RelationGetIndexList(relation);
 
 	/* Sanity checks */

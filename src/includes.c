@@ -123,12 +123,13 @@ inc_should_emit(InclusionCommands *cmds, Relation relation,
 	dlist_iter iter;
 	bool rv = false;
 
-	class_form = RelationGetForm(relation);
 	*chosen_by = NULL;
 
 	/* No command: include everything by default */
 	if (cmds == NULL)
 		return true;
+
+	class_form = RelationGetForm(relation);
 
 	dlist_foreach(iter, &(cmds)->head)
 	{
@@ -277,4 +278,42 @@ re_match(regex_t *re, const char *s)
 				 errmsg("regular expression match for \"%s\" failed: %s",
 						s, errstr)));
 	}
+}
+
+
+bool
+inc_include_column(InclusionCommand *cmd, const char *name)
+{
+	bool rv;
+	int i, ncols;
+
+	/* Permissive configuration */
+	if (cmd == NULL)
+		return true;
+
+	if (cmd->columns) {
+		ncols = jbu_array_len(cmd->columns);
+		for (i = 0; i < ncols; i ++) {
+			char *want = jbu_getitem_str(cmd->columns, i);
+			rv = strcmp(name, want) == 0;
+			pfree(want);
+			if (rv)
+				return true;
+		}
+		return false;
+	}
+
+	if (cmd->skip_columns) {
+		ncols = jbu_array_len(cmd->skip_columns);
+		for (i = 0; i < ncols; i ++) {
+			char *want = jbu_getitem_str(cmd->skip_columns, i);
+			rv = strcmp(name, want) == 0;
+			pfree(want);
+			if (rv)
+				return false;
+		}
+		return true;
+	}
+
+	return true;
 }

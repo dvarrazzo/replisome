@@ -3,9 +3,13 @@
 
 #include "postgres.h"
 
-#include "nodes/bitmapset.h"
 #include "utils/hsearch.h"
 #include "utils/rel.h"
+
+
+/* forward declarations */
+struct InclusionCommand;
+struct JsonDecodingData;
 
 
 typedef struct JsonRelationEntry
@@ -16,9 +20,16 @@ typedef struct JsonRelationEntry
 	bool include;
 	bool exclude;
 
+	/* who chose to include this table?
+	 * Can be NULL if configuration is pretty much empty. */
+	struct InclusionCommand *chosen_by;
+
+	int *colidxs;               /* indexes of columns to emit into tupdesc */
+	int *keyidxs;               /* indexes of attributes to emit into tupdesc */
+
 	bool names_emitted;         /* true if table names have been emitted */
 	bool key_emitted;           /* true if table key names have been emitted */
-	Bitmapset *columns;         /* indexes of the columns to emit */
+
 } JsonRelationEntry;
 
 
@@ -30,11 +41,7 @@ bool reldata_remove(HTAB *reldata, Oid relid);
 void reldata_to_invalidate(HTAB *reldata);
 void reldata_invalidate(Datum arg, Oid relid);
 
-/* forward declarations */
-struct InclusionCommand;
-struct RelationData;
-
 void reldata_complete(JsonRelationEntry *entry, Relation relation,
-	struct InclusionCommand *chosen_by);
+	struct JsonDecodingData *data);
 
 #endif

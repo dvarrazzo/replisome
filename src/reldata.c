@@ -56,12 +56,15 @@ bool
 reldata_remove(HTAB *reldata, Oid oid)
 {
 	JsonRelationEntry *entry;
+
 	entry = reldata_find(reldata, oid);
 	if (!entry)
 		return false;
 
-	if (entry->columns)
-		pfree(entry->columns);
+	if (entry->colidxs)
+		pfree(entry->colidxs);
+	if (entry->keyidxs)
+		pfree(entry->keyidxs);
 
 	hash_search(reldata, (void *)&(oid), HASH_REMOVE, NULL);
 	return true;
@@ -109,68 +112,84 @@ reldata_invalidate(Datum arg, Oid relid)
 }
 
 
+static void find_columns_to_emit(JsonRelationEntry *entry,
+	TupleDesc tupdesc, TupleDesc indexdesc, int **dest);
+
+
+/* Complete the configuration of a relation description.
+ * Assume chosen_by is set to the config entry that selected this table. */
 void
 reldata_complete(JsonRelationEntry *entry, Relation relation,
-	struct InclusionCommand *chosen_by)
+	struct JsonDecodingData *data)
 {
+	Relation indexrel;
 	TupleDesc tupdesc;
-	int natt;
-	Form_pg_attribute attr;
-
-	if (!chosen_by)
-		return;
 
 	tupdesc = RelationGetDescr(relation);
+	find_columns_to_emit(entry, tupdesc, NULL, &entry->colidxs);
 
-	if (chosen_by->columns) {
-		int i, ncols;
-		ncols = jbu_array_len(chosen_by->columns);
-		for (i = 0; i < ncols; i ++) {
-			char *want = jbu_getitem_str(chosen_by->columns, i);
+	indexrel = RelationIdGetRelation(relation->rd_replidindex);
+	if (indexrel != NULL)
+	{
+		TupleDesc indexdesc = RelationGetDescr(indexrel);
+		find_columns_to_emit(
+			entry, tupdesc, indexdesc, &entry->keyidxs);
+		RelationClose(indexrel);
+	}
+}
 
-			for (natt = 0; natt < tupdesc->natts; natt++) {
-				attr = tupdesc->attrs[natt];
-				if (attr->attisdropped || attr->attnum < 0)
-					continue;
 
-				if (strcmp(NameStr(attr->attname), want) == 0) {
-					elog(DEBUG1, "want column %s is the number %i",
-						want, natt);
-					entry->columns = bms_add_member(entry->columns, natt);
+static void
+find_columns_to_emit(JsonRelationEntry *entry,
+	TupleDesc tupdesc, TupleDesc indexdesc, int **dest)
+{
+	int natt;
+	int *pdest;
+
+	*dest = palloc(sizeof(int) * (tupdesc->natts + 1));
+
+	/* Print column information (name, type, value) */
+	for (natt = 0, pdest = *dest; natt < tupdesc->natts; natt++)
+	{
+		Form_pg_attribute attr = tupdesc->attrs[natt];
+
+		/* Do not print dropped or system columns */
+		if (attr->attisdropped || attr->attnum < 0)
+			continue;
+
+		/* Search indexed columns in whole heap tuple */
+		if (indexdesc != NULL)
+		{
+			bool found_col = false;
+			int j;
+			for (j = 0; j < indexdesc->natts; j++)
+			{
+				if (0 == strcmp(
+					NameStr(attr->attname),
+					NameStr(indexdesc->attrs[j]->attname)))
+				{
+					found_col = true;
 					break;
 				}
 			}
-		}
-	}
 
-	if (chosen_by->skip_columns) {
-		int i, ncols;
-
-		/* Select all the valid columns */
-		for (natt = 0; natt < tupdesc->natts; natt++) {
-			attr = tupdesc->attrs[natt];
-			if (attr->attisdropped || attr->attnum < 0)
+			/* Print only indexed columns */
+			if (!found_col) {
 				continue;
-
-			entry->columns = bms_add_member(entry->columns, natt);
-		}
-
-		ncols = jbu_array_len(chosen_by->skip_columns);
-		for (i = 0; i < ncols; i ++) {
-			char *want = jbu_getitem_str(chosen_by->skip_columns, i);
-
-			for (natt = 0; natt < tupdesc->natts; natt++) {
-				attr = tupdesc->attrs[natt];
-				if (attr->attisdropped || attr->attnum < 0)
-					continue;
-
-				if (strcmp(NameStr(attr->attname), want) == 0) {
-					elog(DEBUG1, "unwanted column %s is the number %i",
-						want, natt);
-					entry->columns = bms_del_member(entry->columns, natt);
-					break;
-				}
 			}
 		}
+
+		/* Do not print columns skipped by the user */
+		if (!inc_include_column(entry->chosen_by, NameStr(attr->attname))) {
+			elog(DEBUG1,
+				"attribute \"%s\" ignored by column selection",
+				NameStr(attr->attname));
+			continue;
+		}
+
+		/* we got this column */
+		*pdest++ = natt;
 	}
+
+	*pdest = -1;     /* sentinel */
 }

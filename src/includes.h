@@ -40,6 +40,7 @@ void inc_parse_include(DefElem *elem, InclusionCommands **cmds);
 void inc_parse_exclude(DefElem *elem, InclusionCommands **cmds);
 bool inc_should_emit(InclusionCommands *cmds, Relation relation,
 		InclusionCommand **chosen_by);
+bool inc_include_column(InclusionCommand *cmd, const char *name);
 
 
 #endif
