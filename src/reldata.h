@@ -8,7 +8,7 @@
 
 typedef struct
 {
-	Oid reloid;
+	Oid relid;
 
 	/* should this table be emitted? If both are false we don't know yet */
 	bool include;

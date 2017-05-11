@@ -101,12 +101,36 @@ SELECT data FROM slot_get(
 CREATE TABLE tc1 (id int PRIMARY KEY, foo text, bar text);
 CREATE TABLE tc2 (id int PRIMARY KEY, foo text, bar text);
 
--- Columns must be a list
+-- Columns must be an array
 SELECT data FROM slot_get(
 	'include', '{"table": "tc1", "columns": 42}');
 
-SELECT data FROM slot_get(
+-- Test including and excluding columns
+INSERT INTO tc1 VALUES (1, 'v1', 'v2'), (2, 'v3', 'v4');
+UPDATE tc1 SET foo = 'v5' WHERE id = 1;
+DELETE FROM tc1 WHERE id = 2;
+
+SELECT data FROM slot_peek(
 	'include', '{"table": "tc1", "columns": ["id", "bar", "qux"]}');
+SELECT data FROM slot_get(
+	'include', '{"table": "tc1", "skip_columns": ["bar", "qux"]}');
+
+-- Later include config overrides previous
+INSERT INTO tc1 VALUES (3, 'v1', 'v2');
+INSERT INTO tc2 VALUES (4, 'v3', 'v4');
+SELECT data FROM slot_peek(
+	'include', '{"tables": "^tc", "columns": ["id", "foo"]}');
+SELECT data FROM slot_get(
+	'include', '{"tables": "^tc", "columns": ["id", "foo"]}',
+	'include', '{"table": "tc1", "columns": ["id", "bar"]}');
+
+-- Alter table kicks in new columns
+INSERT INTO tc1 VALUES (4, 'v1', 'v2');
+ALTER TABLE tc1 ADD qux text;
+INSERT INTO tc1 VALUES (5, 'v2', 'v3', 'v4');
+ALTER TABLE tc1 DROP qux;
+SELECT data FROM slot_get(
+	'include', '{"table": "tc1", "columns": ["id", "foo", "qux"]}');
 
 
 SELECT slot_drop();

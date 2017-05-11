@@ -20,7 +20,6 @@ jbu_is_type(Datum jsonb, const char *type)
 
 	jtype = DirectFunctionCall1(jsonb_typeof, jsonb);
 	cjtype = TextDatumGetCString(jtype);
-	elog(DEBUG1, "json thing is type %s", cjtype);
 	rv = (strcmp(cjtype, type) == 0);
 	pfree(cjtype);
 	pfree(DatumGetPointer(jtype));

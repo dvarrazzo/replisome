@@ -41,10 +41,8 @@ reldata_enter(HTAB *reldata, Oid relid)
 	if (!found)
 	{
 		elog(DEBUG1, "entry for relation %u is new", relid);
-		entry->include = false;
-		entry->exclude = false;
-		entry->names_emitted = false;
-		entry->key_emitted = false;
+		memset(entry, '\0', sizeof(JsonRelationEntry));
+		entry->relid = relid;
 	}
 
 	return entry;
