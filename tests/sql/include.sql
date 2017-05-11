@@ -96,4 +96,17 @@ SELECT data FROM slot_get(
 	'exclude', '{"tables": "t"}', 'include', '{"tables": ".2"}');
 
 
+-- Include specific column
+
+CREATE TABLE tc1 (id int PRIMARY KEY, foo text, bar text);
+CREATE TABLE tc2 (id int PRIMARY KEY, foo text, bar text);
+
+-- Columns must be a list
+SELECT data FROM slot_get(
+	'include', '{"table": "tc1", "columns": 42}');
+
+SELECT data FROM slot_get(
+	'include', '{"table": "tc1", "columns": ["id", "bar", "qux"]}');
+
+
 SELECT slot_drop();

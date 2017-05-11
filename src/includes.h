@@ -25,6 +25,8 @@ typedef struct
 	regex_t		table_re;			/* pattern of table names include/exclude */
 	dlist_node	node;				/* double-linked list */
 	CommandType	type;				/* what command is this? */
+	Datum		columns;			/* columns to include as jsonb list */
+	Datum		skip_columns;		/* columns to ignore as jsonb list */
 } InclusionCommand;
 
 
@@ -36,7 +38,8 @@ typedef struct
 
 void inc_parse_include(DefElem *elem, InclusionCommands **cmds);
 void inc_parse_exclude(DefElem *elem, InclusionCommands **cmds);
-bool inc_should_emit(InclusionCommands *cmds, Relation relation);
+bool inc_should_emit(InclusionCommands *cmds, Relation relation,
+		InclusionCommand **chosen_by);
 
 
 #endif

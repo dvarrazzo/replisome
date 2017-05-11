@@ -1,6 +1,6 @@
 MODULE_big = replisome
 
-OBJS = src/replisome.o src/includes.o src/reldata.o
+OBJS = src/replisome.o src/includes.o src/jsonbutils.o src/reldata.o
 
 REGRESS = --inputdir=tests \
 		insert1 cmdline update1 update2 update3 update4 delete1 delete2 \

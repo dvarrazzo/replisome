@@ -294,6 +294,17 @@ data
 	]
 }
 (2 rows)
+-- Include specific column
+CREATE TABLE tc1 (id int PRIMARY KEY, foo text, bar text);
+CREATE TABLE tc2 (id int PRIMARY KEY, foo text, bar text);
+-- Columns must be a list
+SELECT data FROM slot_get(
+	'include', '{"table": "tc1", "columns": 42}');
+ERROR:  member "columns" must be a json array, in "{"table": "tc1", "columns": 42}"
+SELECT data FROM slot_get(
+	'include', '{"table": "tc1", "columns": ["id", "bar", "qux"]}');
+data
+(0 rows)
 SELECT slot_drop();
 slot_drop
 stop

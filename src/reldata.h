@@ -3,6 +3,7 @@
 
 #include "postgres.h"
 
+#include "nodes/bitmapset.h"
 #include "utils/hsearch.h"
 
 typedef struct
@@ -15,6 +16,7 @@ typedef struct
 
 	bool names_emitted;         /* true if table names have been emitted */
 	bool key_emitted;           /* true if table key names have been emitted */
+	Bitmapset *columns;         /* indexes of the columns to emit */
 } JsonRelationEntry;
 
 

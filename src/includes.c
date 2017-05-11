@@ -2,11 +2,9 @@
 
 #include "replisome.h"
 #include "reldata.h"
+#include "jsonbutils.h"
 
 #include "catalog/pg_collation.h"
-#include "utils/builtins.h"
-#include "utils/json.h"
-#include "utils/jsonb.h"
 #include "utils/rel.h"
 
 
@@ -22,36 +20,34 @@ static InclusionCommand *cmd_at_tail(InclusionCommands *cmds, CommandType type);
 static void re_compile(regex_t *re, const char *p);
 static bool re_match(regex_t *re, const char *s);
 
-static bool jsonb_is_type(Datum jsonb, const char *type);
-static char *jsonb_getattr(Datum jsonb, const char *attr);
-
 
 void
 inc_parse_include(DefElem *elem, InclusionCommands **cmds)
 {
 	Datum jsonb;
-	char *t;
-	InclusionCommand *cmd;
+	char *s;
+	Datum o;
+	InclusionCommand *cmd = NULL;
 
 	cmds_init(cmds);
 
-	jsonb = DirectFunctionCall1(jsonb_in, CStringGetDatum(strVal(elem->arg)));
+	jsonb = jbu_create(strVal(elem->arg));
 
-	if (!jsonb_is_type(jsonb, "object")) {
+	if (!jbu_is_type(jsonb, "object")) {
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("parameter \"%s\" must be a json object, got \"%s\"",
 					 elem->defname, strVal(elem->arg))));
 	}
 
-	if ((t = jsonb_getattr(jsonb, "table")) != NULL) {
+	if ((s = jbu_getattr_str(jsonb, "table")) != NULL) {
 		cmd = cmd_at_tail(*cmds, CMD_INCLUDE_TABLE);
-		cmd->table_name = t;
+		cmd->table_name = s;
 	}
-	else if ((t = jsonb_getattr(jsonb, "tables")) != NULL) {
+	else if ((s = jbu_getattr_str(jsonb, "tables")) != NULL) {
 		cmd = cmd_at_tail(*cmds, CMD_INCLUDE_TABLE_PATTERN);
-		re_compile(&cmd->table_re, t);
-		pfree(t);
+		re_compile(&cmd->table_re, s);
+		pfree(s);
 	}
 	else
 	{
@@ -61,6 +57,33 @@ inc_parse_include(DefElem *elem, InclusionCommands **cmds)
 					 elem->defname, strVal(elem->arg))));
 	}
 
+	/* we have parsed the main command action: let's add details */
+	Assert(cmd);
+
+	if ((o = jbu_getattr_obj(jsonb, "columns"))) {
+		if (!jbu_is_type(o, "array")) {
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("member \"columns\" must be a json array, in \"%s\"",
+						strVal(elem->arg))));
+		}
+		cmd->columns = o;
+	}
+	if ((o = jbu_getattr_obj(jsonb, "skip_columns"))) {
+		if (cmd->columns) {
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("you can't have \"columns\" and \"skip_columns\", in \"%s\"",
+						strVal(elem->arg))));
+		}
+		if (!jbu_is_type(o, "array")) {
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("member \"skip_columns\" must be a json array, in \"%s\"",
+						strVal(elem->arg))));
+		}
+		cmd->skip_columns = o;
+	}
 	pfree(DatumGetPointer(jsonb));
 }
 
@@ -93,13 +116,15 @@ inc_parse_exclude(DefElem *elem, InclusionCommands **cmds)
 
 /* Return True if a table should be included in the output */
 bool
-inc_should_emit(InclusionCommands *cmds, Relation relation)
+inc_should_emit(InclusionCommands *cmds, Relation relation,
+		InclusionCommand **chosen_by)
 {
 	Form_pg_class class_form;
 	dlist_iter iter;
 	bool rv = false;
 
 	class_form = RelationGetForm(relation);
+	*chosen_by = NULL;
 
 	/* No command: include everything by default */
 	if (cmds == NULL)
@@ -112,26 +137,35 @@ inc_should_emit(InclusionCommands *cmds, Relation relation)
 		{
 			case CMD_INCLUDE_ALL:
 				rv = true;
+				*chosen_by = cmd;
 				break;
 
 			case CMD_INCLUDE_TABLE:
-				if (strcmp(cmd->table_name, NameStr(class_form->relname)) == 0)
+				if (strcmp(cmd->table_name, NameStr(class_form->relname)) == 0) {
 					rv = true;
+					*chosen_by = cmd;
+				}
 				break;
 
 			case CMD_EXCLUDE_TABLE:
-				if (strcmp(cmd->table_name, NameStr(class_form->relname)) == 0)
+				if (strcmp(cmd->table_name, NameStr(class_form->relname)) == 0) {
 					rv = false;
+					*chosen_by = cmd;
+				}
 				break;
 
 			case CMD_INCLUDE_TABLE_PATTERN:
-				if (re_match(&cmd->table_re, NameStr(class_form->relname)))
+				if (re_match(&cmd->table_re, NameStr(class_form->relname))) {
 					rv = true;
+					*chosen_by = cmd;
+				}
 				break;
 
 			case CMD_EXCLUDE_TABLE_PATTERN:
-				if (re_match(&cmd->table_re, NameStr(class_form->relname)))
+				if (re_match(&cmd->table_re, NameStr(class_form->relname))) {
 					rv = false;
+					*chosen_by = cmd;
+				}
 				break;
 
 			default:
@@ -243,39 +277,4 @@ re_match(regex_t *re, const char *s)
 				 errmsg("regular expression match for \"%s\" failed: %s",
 						s, errstr)));
 	}
-}
-
-
-static bool jsonb_is_type(Datum jsonb, const char *type)
-{
-	char *cjtype;
-	Datum jtype;
-	bool rv;
-
-	jtype = DirectFunctionCall1(jsonb_typeof, jsonb);
-	cjtype = TextDatumGetCString(jtype);
-	elog(DEBUG1, "json thing is type %s", cjtype);
-	rv = (strcmp(cjtype, type) == 0);
-	pfree(cjtype);
-	pfree(DatumGetPointer(jtype));
-	return rv;
-}
-
-static char *jsonb_getattr(Datum jsonb, const char *cattr)
-{
-	char *rv = NULL;
-	Datum attr = CStringGetTextDatum(cattr);
-
-	if (DatumGetBool(DirectFunctionCall2(jsonb_exists, jsonb, attr))) {
-		Datum drv = DirectFunctionCall2(jsonb_object_field_text, jsonb, attr);
-		rv = TextDatumGetCString(drv);
-		elog(DEBUG1, "json attr %s = %s", cattr, rv);
-		pfree(DatumGetPointer(drv));
-	}
-	else {
-		elog(DEBUG1, "json attr %s not found", cattr);
-	}
-
-	pfree(DatumGetPointer(attr));
-	return rv;
 }
