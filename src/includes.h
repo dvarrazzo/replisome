@@ -18,7 +18,7 @@ typedef enum
 } CommandType;
 
 
-typedef struct
+typedef struct InclusionCommand
 {
 	char		*schema_name;		/* name of schema to include/exclude */
 	char		*table_name;		/* name of table to include/exclude */

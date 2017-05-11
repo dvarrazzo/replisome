@@ -1,5 +1,8 @@
 #include "reldata.h"
 
+#include "jsonbutils.h"
+#include "includes.h"
+
 HTAB *
 reldata_create()
 {
@@ -102,5 +105,72 @@ reldata_invalidate(Datum arg, Oid relid)
 
 	if (reldata_remove(to_invalidate, relid)) {
 		elog(DEBUG1, "entry for relation %u removed", relid);
+	}
+}
+
+
+void
+reldata_complete(JsonRelationEntry *entry, Relation relation,
+	struct InclusionCommand *chosen_by)
+{
+	TupleDesc tupdesc;
+	int natt;
+	Form_pg_attribute attr;
+
+	if (!chosen_by)
+		return;
+
+	tupdesc = RelationGetDescr(relation);
+
+	if (chosen_by->columns) {
+		int i, ncols;
+		ncols = jbu_array_len(chosen_by->columns);
+		for (i = 0; i < ncols; i ++) {
+			char *want = jbu_getitem_str(chosen_by->columns, i);
+
+			for (natt = 0; natt < tupdesc->natts; natt++) {
+				attr = tupdesc->attrs[natt];
+				if (attr->attisdropped || attr->attnum < 0)
+					continue;
+
+				if (strcmp(NameStr(attr->attname), want) == 0) {
+					elog(DEBUG1, "want column %s is the number %i",
+						want, natt);
+					entry->columns = bms_add_member(entry->columns, natt);
+					break;
+				}
+			}
+		}
+	}
+
+	if (chosen_by->skip_columns) {
+		int i, ncols;
+
+		/* Select all the valid columns */
+		for (natt = 0; natt < tupdesc->natts; natt++) {
+			attr = tupdesc->attrs[natt];
+			if (attr->attisdropped || attr->attnum < 0)
+				continue;
+
+			entry->columns = bms_add_member(entry->columns, natt);
+		}
+
+		ncols = jbu_array_len(chosen_by->skip_columns);
+		for (i = 0; i < ncols; i ++) {
+			char *want = jbu_getitem_str(chosen_by->skip_columns, i);
+
+			for (natt = 0; natt < tupdesc->natts; natt++) {
+				attr = tupdesc->attrs[natt];
+				if (attr->attisdropped || attr->attnum < 0)
+					continue;
+
+				if (strcmp(NameStr(attr->attname), want) == 0) {
+					elog(DEBUG1, "unwanted column %s is the number %i",
+						want, natt);
+					entry->columns = bms_del_member(entry->columns, natt);
+					break;
+				}
+			}
+		}
 	}
 }

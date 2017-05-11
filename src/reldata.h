@@ -5,8 +5,10 @@
 
 #include "nodes/bitmapset.h"
 #include "utils/hsearch.h"
+#include "utils/rel.h"
 
-typedef struct
+
+typedef struct JsonRelationEntry
 {
 	Oid relid;
 
@@ -27,5 +29,12 @@ bool reldata_remove(HTAB *reldata, Oid relid);
 
 void reldata_to_invalidate(HTAB *reldata);
 void reldata_invalidate(Datum arg, Oid relid);
+
+/* forward declarations */
+struct InclusionCommand;
+struct RelationData;
+
+void reldata_complete(JsonRelationEntry *entry, Relation relation,
+	struct InclusionCommand *chosen_by);
 
 #endif

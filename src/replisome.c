@@ -57,8 +57,6 @@ static void rs_decode_change(LogicalDecodingContext *ctx,
 
 static void output_begin(LogicalDecodingContext *ctx, JsonDecodingData *data,
 		ReorderBufferTXN *txn, bool last_write);
-void complete_table_details(JsonRelationEntry *entry, Relation relation,
-		InclusionCommand *chosen_by);
 
 void
 _PG_init(void)
@@ -505,6 +503,9 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 
 		/* If there is a selection of columns skip the one not selected */
 		if (entry->columns && !bms_is_member(natt, entry->columns)) {
+			elog(DEBUG1,
+				"attribute \"%s\" ignored by column selection",
+			NameStr(attr->attname));
 			continue;
 		}
 
@@ -733,7 +734,7 @@ rs_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 			return;
 		}
 		else {
-			complete_table_details(entry, relation, chosen_by);
+			reldata_complete(entry, relation, chosen_by);
 		}
 	}
 
@@ -949,69 +950,4 @@ rs_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 reset_ctx:
 	MemoryContextSwitchTo(old);
 	MemoryContextReset(data->context);
-}
-
-void
-complete_table_details(JsonRelationEntry *entry, Relation relation, InclusionCommand *chosen_by)
-{
-	TupleDesc tupdesc;
-	Form_pg_attribute attr;
-	int natt;
-
-	if (!chosen_by)
-		return;
-
-	tupdesc = RelationGetDescr(relation);
-
-	if (chosen_by->columns) {
-		int i, ncols;
-		ncols = jbu_array_len(chosen_by->columns);
-		for (i = 0; i < ncols; i ++) {
-			char *want = jbu_getitem_str(chosen_by->columns, i);
-
-			for (natt = 0; natt < tupdesc->natts; natt++) {
-				attr = tupdesc->attrs[natt];
-				if (attr->attisdropped || attr->attnum < 0)
-					continue;
-
-				if (strcmp(NameStr(attr->attname), want) == 0) {
-					elog(DEBUG1, "want column %s is the number %i",
-						want, natt);
-					entry->columns = bms_add_member(entry->columns, natt);
-					break;
-				}
-			}
-		}
-	}
-
-	if (chosen_by->skip_columns) {
-		int i, ncols;
-
-		/* Select all the valid columns */
-		for (natt = 0; natt < tupdesc->natts; natt++) {
-			attr = tupdesc->attrs[natt];
-			if (attr->attisdropped || attr->attnum < 0)
-				continue;
-
-			entry->columns = bms_add_member(entry->columns, natt);
-		}
-
-		ncols = jbu_array_len(chosen_by->skip_columns);
-		for (i = 0; i < ncols; i ++) {
-			char *want = jbu_getitem_str(chosen_by->skip_columns, i);
-
-			for (natt = 0; natt < tupdesc->natts; natt++) {
-				attr = tupdesc->attrs[natt];
-				if (attr->attisdropped || attr->attnum < 0)
-					continue;
-
-				if (strcmp(NameStr(attr->attname), want) == 0) {
-					elog(DEBUG1, "unwanted column %s is the number %i",
-						want, natt);
-					entry->columns = bms_del_member(entry->columns, natt);
-					break;
-				}
-			}
-		}
-	}
 }
