@@ -49,13 +49,19 @@ reldata_enter(HTAB *reldata, Oid relid)
 }
 
 
-JsonRelationEntry *
+bool
 reldata_remove(HTAB *reldata, Oid oid)
 {
 	JsonRelationEntry *entry;
-	entry = (JsonRelationEntry *)hash_search(
-		reldata, (void *)&(oid), HASH_REMOVE, NULL);
-	return entry;
+	entry = reldata_find(reldata, oid);
+	if (!entry)
+		return false;
+
+	if (entry->columns)
+		pfree(entry->columns);
+
+	hash_search(reldata, (void *)&(oid), HASH_REMOVE, NULL);
+	return true;
 }
 
 
@@ -91,13 +97,10 @@ reldata_to_invalidate(HTAB *reldata)
 void
 reldata_invalidate(Datum arg, Oid relid)
 {
-	JsonRelationEntry *entry;
-
 	if (to_invalidate == NULL)
 		return;
 
-	entry = reldata_remove(to_invalidate, relid);
-	if (entry) {
+	if (reldata_remove(to_invalidate, relid)) {
 		elog(DEBUG1, "entry for relation %u removed", relid);
 	}
 }
