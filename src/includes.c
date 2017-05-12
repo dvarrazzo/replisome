@@ -31,6 +31,7 @@ inc_parse_include(DefElem *elem, InclusionCommands **cmds)
 	InclusionCommand *cmd = NULL;
 
 	cmds_init(cmds);
+	cmd = cmd_at_tail(*cmds, CMD_INCLUDE_TABLES);
 
 	jsonb = jbu_create(strVal(elem->arg));
 
@@ -42,19 +43,23 @@ inc_parse_include(DefElem *elem, InclusionCommands **cmds)
 	}
 
 	if ((s = jbu_getattr_str(jsonb, "table")) != NULL) {
-		cmd = cmd_at_tail(*cmds, CMD_INCLUDE_TABLES);
 		cmd->table_name = s;
 		elog(DEBUG1, "command %d will match table \"%s\"", cmd->num, s);
 	}
-	else if ((s = jbu_getattr_str(jsonb, "tables")) != NULL) {
-		cmd = cmd_at_tail(*cmds, CMD_INCLUDE_TABLES);
+
+	if ((s = jbu_getattr_str(jsonb, "tables")) != NULL) {
+		if (cmd->table_name) {
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("parameter \"%s\" can't specify both \"table\" and \"tables\": \"%s\"",
+						 elem->defname, strVal(elem->arg))));
+		}
 		cmd->table_re = re_compile(s);
 		pfree(s);
 		elog(DEBUG1, "command %d will match tables regexp \"%s\"", cmd->num, s);
 	}
-	/* if you add other clauses here you should probably add a matching one
-	 * in inc_parse_exclude() */
-	else
+
+	if (!(cmd->table_name || cmd->table_re))
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),

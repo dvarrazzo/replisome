@@ -22,6 +22,8 @@ SELECT data FROM slot_get('include', '"ciao"');
 ERROR:  parameter "include" must be a json object, got ""ciao""
 SELECT data FROM slot_get('include', '{}');
 ERROR:  command "include" doesn't specifiy what to filter: "{}"
+SELECT data FROM slot_get('include', '{"table": "a", "tables": "a"}');
+ERROR:  parameter "include" can't specify both "table" and "tables": "{"table": "a", "tables": "a"}"
 -- Regexp error
 SELECT data FROM slot_get('include', '{"tables": "("}');
 ERROR:  invalid regular expression "(": parentheses () not balanced

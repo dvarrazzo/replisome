@@ -16,6 +16,7 @@ SELECT data FROM slot_get('include', 'null');
 SELECT data FROM slot_get('include', '[]');
 SELECT data FROM slot_get('include', '"ciao"');
 SELECT data FROM slot_get('include', '{}');
+SELECT data FROM slot_get('include', '{"table": "a", "tables": "a"}');
 
 -- Regexp error
 SELECT data FROM slot_get('include', '{"tables": "("}');
