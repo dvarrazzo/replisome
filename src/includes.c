@@ -284,7 +284,6 @@ re_match(regex_t *re, const char *s)
 bool
 inc_include_column(InclusionCommand *cmd, const char *name)
 {
-	bool rv;
 	int i, ncols;
 
 	/* Permissive configuration */
@@ -294,10 +293,11 @@ inc_include_column(InclusionCommand *cmd, const char *name)
 	if (cmd->columns) {
 		ncols = jbu_array_len(cmd->columns);
 		for (i = 0; i < ncols; i ++) {
+			bool eq;
 			char *want = jbu_getitem_str(cmd->columns, i);
-			rv = strcmp(name, want) == 0;
+			eq = strcmp(name, want) == 0;
 			pfree(want);
-			if (rv)
+			if (eq)
 				return true;
 		}
 		return false;
@@ -306,10 +306,11 @@ inc_include_column(InclusionCommand *cmd, const char *name)
 	if (cmd->skip_columns) {
 		ncols = jbu_array_len(cmd->skip_columns);
 		for (i = 0; i < ncols; i ++) {
+			bool eq;
 			char *want = jbu_getitem_str(cmd->skip_columns, i);
-			rv = strcmp(name, want) == 0;
+			eq = strcmp(name, want) == 0;
 			pfree(want);
-			if (rv)
+			if (eq)
 				return false;
 		}
 		return true;
