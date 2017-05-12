@@ -5,6 +5,22 @@ Introduction
 
 The **replisome** output plugin produces a JSON object per transaction. All of the new/old tuples are available in the JSON object. Also, there are options to include properties such as transaction timestamp, schema-qualified, data types, and transaction ids.
 
+**replisome** can be configured to include only certain information from the
+server: including/excluding tables and schems, columns in the tables and
+filter only rows matching certain conditions.
+
+Unlike different, more complete, PostgreSQL replication solutions (such as
+[pglogical](https://www.2ndquadrant.com/en/resources/pglogical/)),
+**replisome** is not designed to create a faithful replica of an entire
+database, rather it allows selecting certain changes only to allow databases
+with different schemas to exchange a stream of data.
+
+**replisome** is entirely configured by the receiving side. Once a logical
+replication slot is set up on the streaming server, the client can decide what
+data to receive (as well as what to do with it, which may or may not be
+applying these changes to a receiving database). There is no further,
+peristent registration and identification of the sender or the receiver.
+
 **replisome** is released under PostgreSQL license.
 
 Requirements
