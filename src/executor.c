@@ -138,7 +138,7 @@ add_table_parser_error_callback(void *arg)
 {
 	const char *row_filter_str = (const char *) arg;
 
-	errcontext("invalid row_filter expression \"%s\"", row_filter_str);
+	errmsg("invalid row filter expression \"%s\"", row_filter_str);
 
 	/*
 	 * Currently we just suppress any syntax error position report, rather
@@ -149,38 +149,21 @@ add_table_parser_error_callback(void *arg)
 }
 
 
-Node *
-parse_row_filter(Relation rel, char *row_filter_str)
+static List *
+query_to_list(char *query, char *row_filter_str)
 {
-	Node	   *row_filter = NULL;
 	List	   *raw_parsetree_list;
 	SelectStmt *stmt;
 	ResTarget  *restarget;
-	ParseState *pstate;
-	char	   *nspname;
-	char	   *relname;
-	RangeTblEntry *rte;
-	StringInfoData buf;
 	ErrorContextCallback myerrcontext;
 
-	nspname = get_namespace_name(RelationGetNamespace(rel));
-	relname = RelationGetRelationName(rel);
-
-	/*
-	 * Build fake query which includes the expression so that we can
-	 * pass it to the parser.
-	 */
-	initStringInfo(&buf);
-	appendStringInfo(&buf, "SELECT %s FROM %s", row_filter_str,
-					 quote_qualified_identifier(nspname, relname));
-
-	/* Parse it, providing proper error context. */
+	/* Parse the query, providing proper error context. */
 	myerrcontext.callback = add_table_parser_error_callback;
 	myerrcontext.arg = (void *) row_filter_str;
 	myerrcontext.previous = error_context_stack;
 	error_context_stack = &myerrcontext;
 
-	raw_parsetree_list = pg_parse_query(buf.data);
+	raw_parsetree_list = pg_parse_query(query);
 
 	error_context_stack = myerrcontext.previous;
 
@@ -210,6 +193,7 @@ parse_row_filter(Relation rel, char *row_filter_str)
 		goto fail;
 	if (list_length(stmt->targetList) != 1)
 		goto fail;
+
 	restarget = (ResTarget *) linitial(stmt->targetList);
 	if (restarget == NULL ||
 		!IsA(restarget, ResTarget) ||
@@ -218,6 +202,48 @@ parse_row_filter(Relation rel, char *row_filter_str)
 		restarget->val == NULL)
 		goto fail;
 
+	return raw_parsetree_list;
+
+fail:
+	ereport(ERROR,
+			(errcode(ERRCODE_SYNTAX_ERROR),
+			 errmsg("invalid row filter expression \"%s\"", row_filter_str)));
+	return false;	/* keep compiler quiet */
+}
+
+
+Node *
+parse_row_filter(Relation rel, char *row_filter_str)
+{
+	Node	   *row_filter = NULL;
+	List	   *raw_parsetree_list;
+	SelectStmt *stmt;
+	ResTarget  *restarget;
+	ParseState *pstate;
+	char	   *nspname;
+	char	   *relname;
+	RangeTblEntry *rte;
+	StringInfoData buf;
+
+	nspname = get_namespace_name(RelationGetNamespace(rel));
+	relname = RelationGetRelationName(rel);
+
+	/*
+	 * Build fake query which includes the expression so that we can
+	 * pass it to the parser.
+	 */
+	initStringInfo(&buf);
+	appendStringInfo(&buf, "SELECT %s FROM %s", row_filter_str,
+					 quote_qualified_identifier(nspname, relname));
+
+	raw_parsetree_list = query_to_list(buf.data, row_filter_str);
+
+#if PG_VERSION_NUM >= 100000
+	stmt = (SelectStmt *) linitial_node(RawStmt, raw_parsetree_list)->stmt;
+#else
+	stmt = (SelectStmt *) linitial(raw_parsetree_list);
+#endif
+	restarget = (ResTarget *) linitial(stmt->targetList);
 	row_filter = restarget->val;
 
 	/*
@@ -250,10 +276,26 @@ parse_row_filter(Relation rel, char *row_filter_str)
 	pfree(buf.data);
 
 	return row_filter;
+}
 
-fail:
-	ereport(ERROR,
-			(errcode(ERRCODE_SYNTAX_ERROR),
-			 errmsg("invalid row_filter expression \"%s\"", row_filter_str)));
-	return NULL;	/* keep compiler quiet */
+
+bool
+validate_row_filter(char *row_filter_str)
+{
+	List	   *raw_parsetree_list;
+	StringInfoData buf;
+
+	/*
+	 * Build fake query which includes the expression so that we can
+	 * pass it to the parser.
+	 */
+	initStringInfo(&buf);
+	appendStringInfo(&buf, "SELECT %s", row_filter_str);
+
+	raw_parsetree_list = query_to_list(buf.data, row_filter_str);
+
+	pfree(buf.data);
+	list_free(raw_parsetree_list);
+
+	return true;
 }

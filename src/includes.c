@@ -3,6 +3,7 @@
 #include "replisome.h"
 #include "reldata.h"
 #include "jsonbutils.h"
+#include "executor.h"
 
 #include "catalog/pg_collation.h"
 #include "utils/rel.h"
@@ -93,6 +94,7 @@ inc_parse_include(DefElem *elem, InclusionCommands **cmds)
 	}
 	if ((s = jbu_getattr_str(jsonb, "where"))) {
 		/* Validation will happen when we'll see the records */
+		validate_row_filter(s);
 		cmd->row_filter = s;
 		elog(DEBUG1, "command %d specifies a row filter \"%s\"", cmd->num, s);
 	}

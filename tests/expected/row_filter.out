@@ -16,6 +16,9 @@ ERROR:  command "include" doesn't specifiy what to filter: "{"where": "id > 0"}"
 SELECT data FROM slot_get(
 	'exclude', '{"table": "rf1", "where": "id > 0"}');
 ERROR:  command "exclude" cannot specify a row filter, in "{"table": "rf1", "where": "id > 0"}"
+SELECT data FROM slot_get(
+	'include', '{"table": "rf1", "where": "id >"}');
+ERROR:  invalid row filter expression "id >"
 SELECT slot_drop();
 slot_drop
 stop

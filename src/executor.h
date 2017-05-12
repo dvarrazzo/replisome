@@ -8,5 +8,6 @@ ExprContext *prepare_per_tuple_econtext(EState *estate, TupleDesc tupdesc);
 ExprState *prepare_row_filter(Node *row_filter);
 
 Node *parse_row_filter(Relation rel, char *row_filter_str);
+bool validate_row_filter(char *row_filter_str);
 
 #endif
