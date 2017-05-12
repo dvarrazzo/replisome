@@ -104,7 +104,7 @@ data
 	]
 }
 (1 row)
-SELECT data FROM slot_get(
+SELECT data FROM slot_peek(
 	'include', '{"table": "rf1", "where": "data ~ ''^ba.''"}');
 data
 {
@@ -130,6 +130,19 @@ data
 	]
 }
 (2 rows)
+-- Errors found when we first see the table
+SELECT data FROM slot_peek(
+	'include', '{"table": "rf1", "where": "''ciao''"}');
+ERROR:  invalid input syntax for type boolean: "ciao"
+SELECT data FROM slot_peek(
+	'include', '{"table": "rf1", "where": "whateva"}');
+ERROR:  column "whateva" does not exist
+SELECT data FROM slot_peek(
+	'include', '{"table": "rf1", "where": "nofield > 10"}');
+ERROR:  column "nofield" does not exist
+SELECT data FROM slot_peek(
+	'include', '{"table": "rf1", "where": "d > 10"}');
+ERROR:  operator does not exist: date > integer
 SELECT slot_drop();
 slot_drop
 stop

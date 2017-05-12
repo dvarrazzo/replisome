@@ -38,7 +38,17 @@ SELECT data FROM slot_peek(
 SELECT data FROM slot_peek(
 	'include',
 	'{"table": "rf1", "where": "date_trunc(''month'', d) > ''2017-01-15''::date"}');
-SELECT data FROM slot_get(
+SELECT data FROM slot_peek(
 	'include', '{"table": "rf1", "where": "data ~ ''^ba.''"}');
+
+-- Errors found when we first see the table
+SELECT data FROM slot_peek(
+	'include', '{"table": "rf1", "where": "''ciao''"}');
+SELECT data FROM slot_peek(
+	'include', '{"table": "rf1", "where": "whateva"}');
+SELECT data FROM slot_peek(
+	'include', '{"table": "rf1", "where": "nofield > 10"}');
+SELECT data FROM slot_peek(
+	'include', '{"table": "rf1", "where": "d > 10"}');
 
 SELECT slot_drop();
