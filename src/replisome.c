@@ -720,7 +720,7 @@ rs_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 		else {
 			/* Make sure rd_replidindex is set */
 			RelationGetIndexList(relation);
-			reldata_complete(entry, relation, data);
+			reldata_complete(entry, relation, data->pretty_print);
 		}
 	}
 

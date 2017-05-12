@@ -9,7 +9,6 @@
 
 /* forward declarations */
 struct InclusionCommand;
-struct JsonDecodingData;
 
 
 typedef struct JsonRelationEntry
@@ -30,6 +29,12 @@ typedef struct JsonRelationEntry
 	bool names_emitted;         /* true if table names have been emitted */
 	bool key_emitted;           /* true if table key names have been emitted */
 
+	/* pre-calculated fields in the output format */
+	char *keynames;
+	char *keytypes;
+	char *colnames;
+	char *coltypes;
+
 } JsonRelationEntry;
 
 
@@ -42,6 +47,6 @@ void reldata_to_invalidate(HTAB *reldata);
 void reldata_invalidate(Datum arg, Oid relid);
 
 void reldata_complete(JsonRelationEntry *entry, Relation relation,
-	struct JsonDecodingData *data);
+	bool pretty_print);
 
 #endif

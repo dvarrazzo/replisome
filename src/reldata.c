@@ -3,6 +3,12 @@
 #include "jsonbutils.h"
 #include "includes.h"
 
+#include "catalog/pg_type.h"
+#include "lib/stringinfo.h"
+#include "utils/syscache.h"
+#include "access/htup_details.h"
+
+
 HTAB *
 reldata_create()
 {
@@ -66,6 +72,15 @@ reldata_remove(HTAB *reldata, Oid oid)
 	if (entry->keyidxs)
 		pfree(entry->keyidxs);
 
+	if (entry->keynames)
+		pfree(entry->keynames);
+	if (entry->keytypes)
+		pfree(entry->keytypes);
+	if (entry->colnames)
+		pfree(entry->colnames);
+	if (entry->coltypes)
+		pfree(entry->coltypes);
+
 	hash_search(reldata, (void *)&(oid), HASH_REMOVE, NULL);
 	return true;
 }
@@ -114,19 +129,22 @@ reldata_invalidate(Datum arg, Oid relid)
 
 static void find_columns_to_emit(JsonRelationEntry *entry,
 	TupleDesc tupdesc, TupleDesc indexdesc, int **dest);
+static void fill_output_fields(JsonRelationEntry *entry, TupleDesc tupdesc,
+	bool replident, bool pretty_print);
 
 
 /* Complete the configuration of a relation description.
  * Assume chosen_by is set to the config entry that selected this table. */
 void
 reldata_complete(JsonRelationEntry *entry, Relation relation,
-	struct JsonDecodingData *data)
+	bool pretty_print)
 {
 	Relation indexrel;
 	TupleDesc tupdesc;
 
 	tupdesc = RelationGetDescr(relation);
 	find_columns_to_emit(entry, tupdesc, NULL, &entry->colidxs);
+	fill_output_fields(entry, tupdesc, false, pretty_print);
 
 	indexrel = RelationIdGetRelation(relation->rd_replidindex);
 	if (indexrel != NULL)
@@ -134,10 +152,66 @@ reldata_complete(JsonRelationEntry *entry, Relation relation,
 		TupleDesc indexdesc = RelationGetDescr(indexrel);
 		find_columns_to_emit(
 			entry, tupdesc, indexdesc, &entry->keyidxs);
+		fill_output_fields(entry, tupdesc, true, pretty_print);
 		RelationClose(indexrel);
 	}
 }
 
+static void
+fill_output_fields(JsonRelationEntry *entry, TupleDesc tupdesc,
+	bool replident, bool pretty_print)
+{
+	StringInfoData colnames, coltypes;
+	int *attrlist;
+	char *comma = "";
+	int natt;
+	int *pattr;
+
+	initStringInfo(&colnames);
+	initStringInfo(&coltypes);
+
+	if (replident && entry->keyidxs)
+		attrlist = entry->keyidxs;
+	else
+		attrlist = entry->colidxs;
+
+	/* Print column information (name, type, value) */
+	for (pattr = attrlist; (natt = *pattr) >= 0; pattr++)
+	{
+		Form_pg_attribute	attr;		/* the attribute itself */
+		Oid					typid;		/* type of current attribute */
+		HeapTuple			type_tuple;	/* information about a type */
+		Form_pg_type		type_form;
+
+		attr = tupdesc->attrs[natt];
+		typid = attr->atttypid;
+
+		/* Figure out type name */
+		type_tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(typid));
+		if (!HeapTupleIsValid(type_tuple))
+			elog(ERROR, "cache lookup failed for type %u", typid);
+		type_form = (Form_pg_type) GETSTRUCT(type_tuple);
+
+		/* Accumulate each column info */
+		appendStringInfo(&colnames, "%s\"%s\"", comma, NameStr(attr->attname));
+		appendStringInfo(&coltypes, "%s\"%s\"", comma, NameStr(type_form->typname));
+
+		ReleaseSysCache(type_tuple);
+
+		/* The first column does not have comma */
+		if (comma[0] == '\0')
+			comma = pretty_print ? ", " : ",";
+	}
+
+	if (replident) {
+		entry->keynames = colnames.data;
+		entry->keytypes = coltypes.data;
+	}
+	else {
+		entry->colnames = colnames.data;
+		entry->coltypes = coltypes.data;
+	}
+}
 
 static void
 find_columns_to_emit(JsonRelationEntry *entry,
