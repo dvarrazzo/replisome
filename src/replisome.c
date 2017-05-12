@@ -420,8 +420,6 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 	JsonDecodingData	*data;
 	int					natt;
 
-	StringInfoData		colnames;
-	StringInfoData		coltypes;
 	StringInfoData		colvalues;
 	char				*comma = "";
 
@@ -437,9 +435,6 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 	else
 		attrlist = entry->colidxs;
 
-	initStringInfo(&colnames);
-	if (include_types)
-		initStringInfo(&coltypes);
 	initStringInfo(&colvalues);
 
 	/*
@@ -448,51 +443,17 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 	 * tuple data.
 	 */
 	if (replident)
-	{
-		if (data->pretty_print)
-		{
-			if (include_schema)
-				appendStringInfoString(&colnames, "\t\t\t\"keynames\": [");
-			if (include_types)
-				appendStringInfoString(&coltypes, "\t\t\t\"keytypes\": [");
-			appendStringInfoString(&colvalues, "\t\t\t\"oldkey\": [");
-		}
-		else
-		{
-			if (include_schema)
-				appendStringInfoString(&colnames, "\"keynames\":[");
-			if (include_types)
-				appendStringInfoString(&coltypes, "\"keytypes\":[");
-			appendStringInfoString(&colvalues, "\"oldkey\":[");
-		}
-	}
+		appendStringInfoString(&colvalues,
+			data->pretty_print ? "\t\t\t\"oldkey\": [" : "\"oldkey\":[");
 	else
-	{
-		if (data->pretty_print)
-		{
-			if (include_schema)
-				appendStringInfoString(&colnames, "\t\t\t\"colnames\": [");
-			if (include_types)
-				appendStringInfoString(&coltypes, "\t\t\t\"coltypes\": [");
-			appendStringInfoString(&colvalues, "\t\t\t\"values\": [");
-		}
-		else
-		{
-			if (include_schema)
-				appendStringInfoString(&colnames, "\"colnames\":[");
-			if (include_types)
-				appendStringInfoString(&coltypes, "\"coltypes\":[");
-			appendStringInfoString(&colvalues, "\"values\":[");
-		}
-	}
+		appendStringInfoString(&colvalues,
+			data->pretty_print ? "\t\t\t\"values\": [" : "\"values\":[");
 
 	/* Print column information (name, type, value) */
 	for (pattr = attrlist; (natt = *pattr) >= 0; pattr++)
 	{
 		Form_pg_attribute	attr;		/* the attribute itself */
 		Oid					typid;		/* type of current attribute */
-		HeapTuple			type_tuple;	/* information about a type */
-		Form_pg_type		type_form;
 		Oid					typoutput;	/* output function */
 		bool				typisvarlena;
 		Datum				origval;	/* possibly toasted Datum */
@@ -503,12 +464,6 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 		attr = tupdesc->attrs[natt];
 
 		typid = attr->atttypid;
-
-		/* Figure out type name */
-		type_tuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(typid));
-		if (!HeapTupleIsValid(type_tuple))
-			elog(ERROR, "cache lookup failed for type %u", typid);
-		type_form = (Form_pg_type) GETSTRUCT(type_tuple);
 
 		/* Get information needed for printing values of a type */
 		getTypeOutputInfo(typid, &typoutput, &typisvarlena);
@@ -531,13 +486,6 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 		}
 
 		/* Accumulate each column info */
-		if (include_schema)
-			appendStringInfo(&colnames, "%s\"%s\"", comma, NameStr(attr->attname));
-
-		if (include_types)
-			appendStringInfo(&coltypes, "%s\"%s\"", comma, NameStr(type_form->typname));
-
-		ReleaseSysCache(type_tuple);
 
 		if (isnull)
 		{
@@ -595,70 +543,57 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 		}
 
 		/* The first column does not have comma */
-		if (strcmp(comma, "") == 0)
-		{
-			if (data->pretty_print)
-				comma = ", ";
-			else
-				comma = ",";
-		}
+		if (comma[0] == '\0')
+			comma = data->pretty_print ? ", " : ",";
 	}
 
 	/* Column info ends */
-	if (replident)
-	{
-		if (data->pretty_print)
-		{
-			if (include_schema)
-				appendStringInfoString(&colnames, "],\n");
-			if (include_types)
-				appendStringInfoString(&coltypes, "],\n");
-			appendStringInfoString(&colvalues, "]\n");
-		}
-		else
-		{
-			if (include_schema)
-				appendStringInfoString(&colnames, "],");
-			if (include_types)
-				appendStringInfoString(&coltypes, "],");
-			appendStringInfoChar(&colvalues, ']');
-		}
-	}
+	if (replident || !hasreplident)
+		appendStringInfoString(&colvalues,
+			data->pretty_print ? "]\n" : "]");
 	else
-	{
-		if (data->pretty_print)
-		{
-			if (include_schema)
-				appendStringInfoString(&colnames, "],\n");
-			if (include_types)
-				appendStringInfoString(&coltypes, "],\n");
-			if (hasreplident)
-				appendStringInfoString(&colvalues, "],\n");
-			else
-				appendStringInfoString(&colvalues, "]\n");
-		}
-		else
-		{
-			if (include_schema)
-				appendStringInfoString(&colnames, "],");
-			if (include_types)
-				appendStringInfoString(&coltypes, "],");
-			if (hasreplident)
-				appendStringInfoString(&colvalues, "],");
-			else
-				appendStringInfoChar(&colvalues, ']');
-		}
-	}
+		appendStringInfoString(&colvalues,
+			data->pretty_print ? "],\n" : "],");
 
 	/* Print data */
-	appendStringInfoString(ctx->out, colnames.data);
-	if (include_types)
-		appendStringInfoString(ctx->out, coltypes.data);
+	if (include_schema) {
+		if (replident) {
+			appendStringInfoString(ctx->out,
+				data->pretty_print
+					? "\t\t\t\"keynames\": [" : "\"keynames\":[");
+			appendStringInfoString(ctx->out,
+				entry->keynames ? entry->keynames : entry->colnames);
+		}
+		else {
+			appendStringInfoString(ctx->out,
+				data->pretty_print
+					? "\t\t\t\"colnames\": [" : "\"colnames\":[");
+			appendStringInfoString(ctx->out, entry->colnames);
+		}
+		appendStringInfoString(ctx->out,
+			data->pretty_print ? "],\n" : "],");
+	}
+
+	if (include_types) {
+		if (replident) {
+			appendStringInfoString(ctx->out,
+				data->pretty_print
+					? "\t\t\t\"keytypes\": [" : "\"keytypes\":[");
+			appendStringInfoString(ctx->out,
+				entry->keytypes ? entry->keytypes : entry->coltypes);
+		}
+		else {
+			appendStringInfoString(ctx->out,
+				data->pretty_print
+					? "\t\t\t\"coltypes\": [" : "\"coltypes\":[");
+			appendStringInfoString(ctx->out, entry->coltypes);
+		}
+		appendStringInfoString(ctx->out,
+			data->pretty_print ? "],\n" : "],");
+	}
+
 	appendStringInfoString(ctx->out, colvalues.data);
 
-	pfree(colnames.data);
-	if (include_types)
-		pfree(coltypes.data);
 	pfree(colvalues.data);
 }
 
