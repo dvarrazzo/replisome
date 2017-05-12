@@ -58,5 +58,11 @@ SELECT slot_drop();
 SELECT slot_create();
 ALTER TABLE rf1 ADD bah int;
 
+INSERT INTO rf1 VALUES (4, 'bar', '2017-01-01', 20);
+INSERT INTO rf1 VALUES (5, 'bar', '2017-01-01', 40);
+ALTER TABLE rf1 DROP bah;
+INSERT INTO rf1 VALUES (6, 'bar', '2017-01-01');
+SELECT data FROM slot_get(
+	'include', '{"table": "rf1", "where": "bah > 30"}');
 
 SELECT slot_drop();
