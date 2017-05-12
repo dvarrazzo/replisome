@@ -1,25 +1,6 @@
 -- this is the first test (CREATE EXTENSION, no DROP TABLE)
 \set VERBOSITY terse
 \pset format unaligned
-CREATE FUNCTION slot_create() RETURNS text LANGUAGE sql AS $$
-	SELECT 'init'::text FROM pg_create_logical_replication_slot(
-		'regression_slot', 'replisome');
-$$;
-CREATE FUNCTION slot_drop() RETURNS text LANGUAGE sql AS $$
-	SELECT 'stop'::text FROM pg_drop_replication_slot('regression_slot');
-$$;
-CREATE FUNCTION slot_get(variadic args text[] default '{}', out data text)
-RETURNS SETOF text LANGUAGE sql AS $$
-	SELECT data FROM pg_logical_slot_get_changes(
-		'regression_slot', NULL, NULL,
-		variadic '{pretty-print,1}'::text[] || args);
-$$;
-CREATE FUNCTION slot_peek(variadic args text[] default '{}', out data text)
-RETURNS SETOF text LANGUAGE sql AS $$
-	SELECT data FROM pg_logical_slot_peek_changes(
-		'regression_slot', NULL, NULL,
-		variadic '{pretty-print,1}'::text[] || args);
-$$;
 -- predictability
 SET synchronous_commit = on;
 CREATE TABLE table_with_pk (
