@@ -1,0 +1,169 @@
+\set VERBOSITY terse
+\pset format unaligned
+-- predictability
+SET synchronous_commit = on;
+DROP TABLE IF EXISTS rf1;
+NOTICE:  table "rf1" does not exist, skipping
+CREATE TABLE rf1 (id int PRIMARY KEY, data text, d date);
+SELECT slot_create();
+slot_create
+init
+(1 row)
+-- Bad config
+SELECT data FROM slot_get(
+	'include', '{"where": "id > 0"}');
+ERROR:  command "include" doesn't specifiy what to filter: "{"where": "id > 0"}"
+SELECT data FROM slot_get(
+	'exclude', '{"table": "rf1", "where": "id > 0"}');
+ERROR:  command "exclude" cannot specify a row filter, in "{"table": "rf1", "where": "id > 0"}"
+SELECT data FROM slot_get(
+	'include', '{"table": "rf1", "where": "id >"}');
+ERROR:  invalid row filter expression "id >"
+-- Good config
+SELECT data FROM slot_get(
+	'include', '{"table": "rf1", "where": "whateva"}');
+data
+(0 rows)
+SELECT data FROM slot_get(
+	'include', '{"table": "rf1", "where": "id > 0"}');
+data
+(0 rows)
+-- Basic filtering
+INSERT INTO rf1 VALUES (1, 'foo', NULL);
+INSERT INTO rf1 VALUES (2, 'bar', '2017-01-01');
+INSERT INTO rf1 VALUES (3, 'baz', '2017-02-01');
+SELECT data FROM slot_peek(
+	'include', '{"table": "rf1", "where": "nofield = 42"}');
+ERROR:  column "nofield" does not exist
+SELECT data FROM slot_peek(
+	'include', '{"table": "rf1", "where": "id % 2 = 1"}');
+data
+{
+	"change": [
+		{
+			"op": "I",
+			"schema": "public",
+			"table": "rf1",
+			"colnames": ["id", "data", "d"],
+			"coltypes": ["int4", "text", "date"],
+			"values": [1, "foo", null]
+		}
+	]
+}
+{
+	"change": [
+		{
+			"op": "I",
+			"schema": "public",
+			"table": "rf1",
+			"values": [3, "baz", "02-01-2017"]
+		}
+	]
+}
+(2 rows)
+SELECT data FROM slot_peek(
+	'include', '{"table": "rf1", "where": "d is not null"}');
+data
+{
+	"change": [
+		{
+			"op": "I",
+			"schema": "public",
+			"table": "rf1",
+			"colnames": ["id", "data", "d"],
+			"coltypes": ["int4", "text", "date"],
+			"values": [2, "bar", "01-01-2017"]
+		}
+	]
+}
+{
+	"change": [
+		{
+			"op": "I",
+			"schema": "public",
+			"table": "rf1",
+			"values": [3, "baz", "02-01-2017"]
+		}
+	]
+}
+(2 rows)
+SELECT data FROM slot_peek(
+	'include',
+	'{"table": "rf1", "where": "date_trunc(''month'', d) > ''2017-01-15''::date"}');
+data
+{
+	"change": [
+		{
+			"op": "I",
+			"schema": "public",
+			"table": "rf1",
+			"colnames": ["id", "data", "d"],
+			"coltypes": ["int4", "text", "date"],
+			"values": [3, "baz", "02-01-2017"]
+		}
+	]
+}
+(1 row)
+SELECT data FROM slot_peek(
+	'include', '{"table": "rf1", "where": "data ~ ''^ba.''"}');
+data
+{
+	"change": [
+		{
+			"op": "I",
+			"schema": "public",
+			"table": "rf1",
+			"colnames": ["id", "data", "d"],
+			"coltypes": ["int4", "text", "date"],
+			"values": [2, "bar", "01-01-2017"]
+		}
+	]
+}
+{
+	"change": [
+		{
+			"op": "I",
+			"schema": "public",
+			"table": "rf1",
+			"values": [3, "baz", "02-01-2017"]
+		}
+	]
+}
+(2 rows)
+-- Errors found when we first see the table
+SELECT data FROM slot_peek(
+	'include', '{"table": "rf1", "where": "''ciao''"}');
+ERROR:  invalid input syntax for type boolean: "ciao"
+SELECT data FROM slot_peek(
+	'include', '{"table": "rf1", "where": "whateva"}');
+ERROR:  column "whateva" does not exist
+SELECT data FROM slot_peek(
+	'include', '{"table": "rf1", "where": "nofield > 10"}');
+ERROR:  column "nofield" does not exist
+SELECT data FROM slot_peek(
+	'include', '{"table": "rf1", "where": "d > 10"}');
+ERROR:  operator does not exist: date > integer
+-- We survive an error happened in the change decoding.
+SELECT data FROM slot_peek(
+	'include', '{"table": "rf1", "where": "nofield = 42"}');
+ERROR:  column "nofield" does not exist
+SELECT slot_drop();
+slot_drop
+stop
+(1 row)
+SELECT slot_create();
+slot_create
+init
+(1 row)
+ALTER TABLE rf1 ADD bah int;
+INSERT INTO rf1 VALUES (4, 'bar', '2017-01-01', 20);
+INSERT INTO rf1 VALUES (5, 'bar', '2017-01-01', 40);
+ALTER TABLE rf1 DROP bah;
+INSERT INTO rf1 VALUES (6, 'bar', '2017-01-01');
+SELECT data FROM slot_get(
+	'include', '{"table": "rf1", "where": "bah > 30"}');
+ERROR:  column "bah" does not exist
+SELECT slot_drop();
+slot_drop
+stop
+(1 row)

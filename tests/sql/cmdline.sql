@@ -9,7 +9,7 @@ SELECT slot_create();
 -- Unknown option
 SELECT data FROM slot_get('nosuchopt', '42');
 
--- Bad json
+-- Bad include
 SELECT data FROM slot_get('include', '');
 SELECT data FROM slot_get('include', '{');
 SELECT data FROM slot_get('include', 'null');
@@ -19,6 +19,11 @@ SELECT data FROM slot_get('include', '{}');
 
 -- Regexp error
 SELECT data FROM slot_get('include', '{"tables": "("}');
+
+-- Bad exclude
+SELECT data FROM slot_get('exclude', '[]');
+SELECT data FROM slot_get('exclude', '{}');
+SELECT data FROM slot_get('exclude', '{"table": "a", "columns": ["a"]}');
 
 -- By default don't write in chunks
 CREATE TABLE x ();

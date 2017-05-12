@@ -9,7 +9,7 @@ init
 -- Unknown option
 SELECT data FROM slot_get('nosuchopt', '42');
 ERROR:  option "nosuchopt" = "42" is unknown
--- Bad json
+-- Bad include
 SELECT data FROM slot_get('include', '');
 ERROR:  invalid input syntax for type json
 SELECT data FROM slot_get('include', '{');
@@ -21,10 +21,17 @@ ERROR:  parameter "include" must be a json object, got "[]"
 SELECT data FROM slot_get('include', '"ciao"');
 ERROR:  parameter "include" must be a json object, got ""ciao""
 SELECT data FROM slot_get('include', '{}');
-ERROR:  parameter "include" not valid: "{}"
+ERROR:  command "include" doesn't specifiy what to filter: "{}"
 -- Regexp error
 SELECT data FROM slot_get('include', '{"tables": "("}');
 ERROR:  invalid regular expression "(": parentheses () not balanced
+-- Bad exclude
+SELECT data FROM slot_get('exclude', '[]');
+ERROR:  parameter "exclude" must be a json object, got "[]"
+SELECT data FROM slot_get('exclude', '{}');
+ERROR:  command "exclude" doesn't specifiy what to filter: "{}"
+SELECT data FROM slot_get('exclude', '{"table": "a", "columns": ["a"]}');
+ERROR:  command "exclude" cannot specify columns, in "{"table": "a", "columns": ["a"]}"
 -- By default don't write in chunks
 CREATE TABLE x ();
 DROP TABLE x;

@@ -20,6 +20,7 @@ typedef enum
 
 typedef struct InclusionCommand
 {
+	int			num;				/* number of the command (for debug) */
 	char		*schema_name;		/* name of schema to include/exclude */
 	char		*table_name;		/* name of table to include/exclude */
 	regex_t		table_re;			/* pattern of table names include/exclude */
@@ -27,6 +28,7 @@ typedef struct InclusionCommand
 	CommandType	type;				/* what command is this? */
 	Datum		columns;			/* columns to include as jsonb list */
 	Datum		skip_columns;		/* columns to ignore as jsonb list */
+	char		*row_filter;		/* only emit records matching this check */
 } InclusionCommand;
 
 

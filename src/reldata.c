@@ -2,6 +2,7 @@
 
 #include "jsonbutils.h"
 #include "includes.h"
+#include "executor.h"
 
 #include "catalog/pg_type.h"
 #include "lib/stringinfo.h"
@@ -10,7 +11,7 @@
 
 
 HTAB *
-reldata_create()
+reldata_create(MemoryContext ctx)
 {
 	HTAB *reldata;
 	HASHCTL		ctl;
@@ -21,12 +22,30 @@ reldata_create()
 	ctl.keysize = sizeof(Oid);
 	ctl.entrysize = sizeof(JsonRelationEntry);
 	ctl.hash = oid_hash;
+	ctl.hcxt = ctx;
 	reldata = hash_create(
-		"json relations cache", 32, &ctl, HASH_ELEM | HASH_FUNCTION);
+		"json relations cache", 32, &ctl,
+		HASH_ELEM | HASH_FUNCTION | HASH_CONTEXT);
 
 	return reldata;
 }
 
+void
+reldata_destroy(HTAB *reldata)
+{
+	HASH_SEQ_STATUS status;
+	JsonRelationEntry *entry;
+
+	if (reldata == NULL)
+		return;
+
+	hash_seq_init(&status, reldata);
+	while ((entry = hash_seq_search(&status)) != NULL) {
+		reldata_free(entry);
+	}
+
+	hash_destroy(reldata);
+}
 
 JsonRelationEntry *
 reldata_find(HTAB *reldata, Oid relid)
@@ -67,6 +86,15 @@ reldata_remove(HTAB *reldata, Oid oid)
 	if (!entry)
 		return false;
 
+	reldata_free(entry);
+	hash_search(reldata, (void *)&(oid), HASH_REMOVE, NULL);
+	return true;
+}
+
+
+void
+reldata_free(JsonRelationEntry *entry)
+{
 	if (entry->colidxs)
 		pfree(entry->colidxs);
 	if (entry->keyidxs)
@@ -81,8 +109,8 @@ reldata_remove(HTAB *reldata, Oid oid)
 	if (entry->coltypes)
 		pfree(entry->coltypes);
 
-	hash_search(reldata, (void *)&(oid), HASH_REMOVE, NULL);
-	return true;
+	if (entry->estate)
+		FreeExecutorState(entry->estate);
 }
 
 
@@ -103,7 +131,7 @@ void
 reldata_to_invalidate(HTAB *reldata)
 {
 	if (reldata)
-		elog(DEBUG1, "reldata will be invalidated");
+		elog(DEBUG1, "reldata will be invalidated at %p", reldata);
 	else
 		elog(DEBUG1, "invalidation will be ignored");
 
@@ -154,6 +182,13 @@ reldata_complete(JsonRelationEntry *entry, Relation relation,
 			entry, tupdesc, indexdesc, &entry->keyidxs);
 		fill_output_fields(entry, tupdesc, true, pretty_print);
 		RelationClose(indexrel);
+	}
+
+	if (entry->chosen_by && entry->chosen_by->row_filter) {
+		entry->row_filter = parse_row_filter(
+			relation, entry->chosen_by->row_filter);
+		entry->exprstate = prepare_row_filter(entry->row_filter);
+		entry->estate = create_estate_for_relation(relation, false);
 	}
 }
 
