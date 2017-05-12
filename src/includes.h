@@ -20,6 +20,7 @@ typedef enum
 
 typedef struct InclusionCommand
 {
+	int			num;				/* number of the command (for debug) */
 	char		*schema_name;		/* name of schema to include/exclude */
 	char		*table_name;		/* name of table to include/exclude */
 	regex_t		table_re;			/* pattern of table names include/exclude */

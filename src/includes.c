@@ -43,17 +43,20 @@ inc_parse_include(DefElem *elem, InclusionCommands **cmds)
 	if ((s = jbu_getattr_str(jsonb, "table")) != NULL) {
 		cmd = cmd_at_tail(*cmds, CMD_INCLUDE_TABLE);
 		cmd->table_name = s;
+		elog(DEBUG1, "command %d will match table \"%s\"", cmd->num, s);
 	}
 	else if ((s = jbu_getattr_str(jsonb, "tables")) != NULL) {
 		cmd = cmd_at_tail(*cmds, CMD_INCLUDE_TABLE_PATTERN);
 		re_compile(&cmd->table_re, s);
 		pfree(s);
+		elog(DEBUG1, "command %d will match tables regexp \"%s\"", cmd->num, s);
 	}
 	else
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("parameter \"%s\" not valid: \"%s\"",
+				 errmsg(
+					 "include command \"%s\" doesn't specifiy what to filter: \"%s\"",
 					 elem->defname, strVal(elem->arg))));
 	}
 
@@ -68,6 +71,7 @@ inc_parse_include(DefElem *elem, InclusionCommands **cmds)
 						strVal(elem->arg))));
 		}
 		cmd->columns = o;
+		elog(DEBUG1, "command %d specifies columns to include", cmd->num);
 	}
 	if ((o = jbu_getattr_obj(jsonb, "skip_columns"))) {
 		if (cmd->columns) {
@@ -82,11 +86,13 @@ inc_parse_include(DefElem *elem, InclusionCommands **cmds)
 					 errmsg("member \"skip_columns\" must be a json array, in \"%s\"",
 						strVal(elem->arg))));
 		}
+		elog(DEBUG1, "command %d specifies columns to skip", cmd->num);
 		cmd->skip_columns = o;
 	}
 	if ((s = jbu_getattr_str(jsonb, "where"))) {
 		/* Validation will happen when we'll see the records */
 		cmd->row_filter = s;
+		elog(DEBUG1, "command %d specifies a row filter \"%s\"", cmd->num, s);
 	}
 	pfree(DatumGetPointer(jsonb));
 }
@@ -98,8 +104,10 @@ inc_parse_exclude(DefElem *elem, InclusionCommands **cmds)
 
 	/* if the first command is an exclude, start including everything */
 	cmds_init(cmds);
-	if (cmds_is_empty(*cmds))
-		cmd_at_tail(*cmds, CMD_INCLUDE_ALL);
+	if (cmds_is_empty(*cmds)) {
+		cmd = cmd_at_tail(*cmds, CMD_INCLUDE_ALL);
+		elog(DEBUG1, "command %d will include everything", cmd->num);
+	}
 
 	inc_parse_include(elem, cmds);
 	cmd = cmds_tail(*cmds);
@@ -107,10 +115,12 @@ inc_parse_exclude(DefElem *elem, InclusionCommands **cmds)
 	{
 		case CMD_INCLUDE_TABLE:
 			cmd->type = CMD_EXCLUDE_TABLE;
+			elog(DEBUG1, "command %d will exclude", cmd->num);
 			break;
 
 		case CMD_INCLUDE_TABLE_PATTERN:
 			cmd->type = CMD_EXCLUDE_TABLE_PATTERN;
+			elog(DEBUG1, "command %d will exclude", cmd->num);
 			break;
 
 		default:
@@ -178,8 +188,13 @@ inc_should_emit(InclusionCommands *cmds, Relation relation,
 		}
 	}
 
-	elog(DEBUG1, "table \"%s\" matches include commands: %s",
-		NameStr(class_form->relname), rv ? "yes" : "no");
+	if (*chosen_by != NULL)
+		elog(DEBUG1, "table \"%s\" included? %s by command %d",
+			NameStr(class_form->relname), rv ? "yes" : "no", (*chosen_by)->num);
+	else
+		elog(DEBUG1, "table \"%s\" included? %s by default",
+			NameStr(class_form->relname), rv ? "yes" : "no");
+
 	return rv;
 }
 
@@ -222,8 +237,11 @@ cmds_tail(InclusionCommands *cmds)
 static InclusionCommand *
 cmd_at_tail(InclusionCommands *cmds, CommandType type)
 {
+	static int num;
+
 	InclusionCommand *cmd = palloc0(sizeof(InclusionCommand));
 	cmd->type = type;
+	cmd->num = num++;
 	cmds_push(cmds, cmd);
 	return cmd;
 }
