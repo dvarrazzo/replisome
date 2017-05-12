@@ -2,6 +2,7 @@
 
 #include "jsonbutils.h"
 #include "includes.h"
+#include "executor.h"
 
 #include "catalog/pg_type.h"
 #include "lib/stringinfo.h"
@@ -155,6 +156,10 @@ reldata_complete(JsonRelationEntry *entry, Relation relation,
 		fill_output_fields(entry, tupdesc, true, pretty_print);
 		RelationClose(indexrel);
 	}
+
+	if (entry->chosen_by && entry->chosen_by->row_filter)
+		entry->row_filter = parse_row_filter(
+			relation, entry->chosen_by->row_filter);
 }
 
 static void

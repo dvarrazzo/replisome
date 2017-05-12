@@ -84,6 +84,10 @@ inc_parse_include(DefElem *elem, InclusionCommands **cmds)
 		}
 		cmd->skip_columns = o;
 	}
+	if ((s = jbu_getattr_str(jsonb, "where"))) {
+		/* Validation will happen when we'll see the records */
+		cmd->row_filter = s;
+	}
 	pfree(DatumGetPointer(jsonb));
 }
 

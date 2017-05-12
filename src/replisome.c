@@ -16,6 +16,7 @@
 #include "replisome.h"
 #include "reldata.h"
 #include "jsonbutils.h"
+#include "executor.h"
 
 #include "access/sysattr.h"
 
@@ -722,6 +723,40 @@ rs_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 			break;
 		default:
 			Assert(false);
+	}
+
+	if (entry->row_filter)
+	{
+		EState		   *estate;
+		ExprContext	   *econtext;
+		TupleDesc		tupdesc = RelationGetDescr(relation);
+		HeapTuple		oldtup = change->data.tp.oldtuple ?
+			&change->data.tp.oldtuple->tuple : NULL;
+		HeapTuple		newtup = change->data.tp.newtuple ?
+			&change->data.tp.newtuple->tuple : NULL;
+
+		estate = create_estate_for_relation(relation, false);
+		econtext = prepare_per_tuple_econtext(estate, tupdesc);
+
+		ExecStoreTuple(newtup ? newtup : oldtup, econtext->ecxt_scantuple,
+					   InvalidBuffer, false);
+		{
+			ExprState  *exprstate = prepare_row_filter(entry->row_filter);
+			Datum		res;
+			bool		isnull;
+
+			res = ExecEvalExpr(exprstate, econtext, &isnull, NULL);
+
+			/* NULL is same as false for our use. */
+			if (isnull)
+				goto reset_ctx;
+
+			if (!DatumGetBool(res))
+				goto reset_ctx;
+		}
+
+		ExecDropSingleTupleTableSlot(econtext->ecxt_scantuple);
+		FreeExecutorState(estate);
 	}
 
 	if (!data->include_empty_xacts && data->nr_changes == 0)

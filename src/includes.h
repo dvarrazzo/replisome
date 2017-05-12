@@ -27,6 +27,7 @@ typedef struct InclusionCommand
 	CommandType	type;				/* what command is this? */
 	Datum		columns;			/* columns to include as jsonb list */
 	Datum		skip_columns;		/* columns to ignore as jsonb list */
+	char		*row_filter;		/* only emit records matching this check */
 } InclusionCommand;
 
 
