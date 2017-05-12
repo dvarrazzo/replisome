@@ -408,46 +408,23 @@ quote_escape_json(StringInfo buf, const char *val)
 	appendStringInfoChar(buf, '"');
 }
 
-/*
- * Accumulate tuple information and stores it at the end
- *
- * replident: is this tuple a replica identity?
- * hasreplident: does this tuple has an associated replica identity?
- */
 static void
-tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tuple, TupleDesc indexdesc, bool replident, bool hasreplident, bool include_schema, JsonRelationEntry *entry)
+values_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tuple, TupleDesc indexdesc, bool replident, JsonRelationEntry *entry)
 {
 	JsonDecodingData	*data;
 	int					natt;
 
-	StringInfoData		colvalues;
 	char				*comma = "";
 
-	bool				include_types;
 	int					*attrlist;
 	int					*pattr;
 
 	data = ctx->output_plugin_private;
-	include_types = include_schema && data->include_types;
 
 	if (replident && entry->keyidxs)
 		attrlist = entry->keyidxs;
 	else
 		attrlist = entry->colidxs;
-
-	initStringInfo(&colvalues);
-
-	/*
-	 * If replident is true, it will output info about replica identity. In this
-	 * case, there are special JSON objects for it. Otherwise, it will print new
-	 * tuple data.
-	 */
-	if (replident)
-		appendStringInfoString(&colvalues,
-			data->pretty_print ? "\t\t\t\"oldkey\": [" : "\"oldkey\":[");
-	else
-		appendStringInfoString(&colvalues,
-			data->pretty_print ? "\t\t\t\"values\": [" : "\"values\":[");
 
 	/* Print column information (name, type, value) */
 	for (pattr = attrlist; (natt = *pattr) >= 0; pattr++)
@@ -489,7 +466,7 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 
 		if (isnull)
 		{
-			appendStringInfo(&colvalues, "%snull", comma);
+			appendStringInfo(ctx->out, "%snull", comma);
 		}
 		else
 		{
@@ -521,23 +498,23 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 							pg_strncasecmp(outputstr, "Infinity", 8) == 0 ||
 							pg_strncasecmp(outputstr, "-Infinity", 9) == 0)
 					{
-						appendStringInfo(&colvalues, "%snull", comma);
+						appendStringInfo(ctx->out, "%snull", comma);
 						elog(DEBUG1, "attribute \"%s\" is special: %s", NameStr(attr->attname), outputstr);
 					}
 					else if (strspn(outputstr, "0123456789+-eE.") == strlen(outputstr))
-						appendStringInfo(&colvalues, "%s%s", comma, outputstr);
+						appendStringInfo(ctx->out, "%s%s", comma, outputstr);
 					else
 						elog(ERROR, "%s is not a number", outputstr);
 					break;
 				case BOOLOID:
 					if (strcmp(outputstr, "t") == 0)
-						appendStringInfo(&colvalues, "%strue", comma);
+						appendStringInfo(ctx->out, "%strue", comma);
 					else
-						appendStringInfo(&colvalues, "%sfalse", comma);
+						appendStringInfo(ctx->out, "%sfalse", comma);
 					break;
 				default:
-					appendStringInfoString(&colvalues, comma);
-					quote_escape_json(&colvalues, outputstr);
+					appendStringInfoString(ctx->out, comma);
+					quote_escape_json(ctx->out, outputstr);
 					break;
 			}
 		}
@@ -546,14 +523,22 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 		if (comma[0] == '\0')
 			comma = data->pretty_print ? ", " : ",";
 	}
+}
 
-	/* Column info ends */
-	if (replident || !hasreplident)
-		appendStringInfoString(&colvalues,
-			data->pretty_print ? "]\n" : "]");
-	else
-		appendStringInfoString(&colvalues,
-			data->pretty_print ? "],\n" : "],");
+/*
+ * Accumulate tuple information and stores it at the end
+ *
+ * replident: is this tuple a replica identity?
+ * hasreplident: does this tuple has an associated replica identity?
+ */
+static void
+tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tuple, TupleDesc indexdesc, bool replident, bool hasreplident, bool include_schema, JsonRelationEntry *entry)
+{
+	JsonDecodingData	*data;
+	bool				include_types;
+
+	data = ctx->output_plugin_private;
+	include_types = include_schema && data->include_types;
 
 	/* Print data */
 	if (include_schema) {
@@ -592,9 +577,27 @@ tuple_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple tu
 			data->pretty_print ? "],\n" : "],");
 	}
 
-	appendStringInfoString(ctx->out, colvalues.data);
+	/*
+	 * If replident is true, it will output info about replica identity. In this
+	 * case, there are special JSON objects for it. Otherwise, it will print new
+	 * tuple data.
+	 */
+	if (replident)
+		appendStringInfoString(ctx->out,
+			data->pretty_print ? "\t\t\t\"oldkey\": [" : "\"oldkey\":[");
+	else
+		appendStringInfoString(ctx->out,
+			data->pretty_print ? "\t\t\t\"values\": [" : "\"values\":[");
 
-	pfree(colvalues.data);
+	values_to_stringinfo(ctx, tupdesc, tuple, indexdesc, replident, entry);
+
+	/* Column info ends */
+	if (replident || !hasreplident)
+		appendStringInfoString(ctx->out,
+			data->pretty_print ? "]\n" : "]");
+	else
+		appendStringInfoString(ctx->out,
+			data->pretty_print ? "],\n" : "],");
 }
 
 /* Print columns information */
