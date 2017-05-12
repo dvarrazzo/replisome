@@ -143,6 +143,19 @@ ERROR:  column "nofield" does not exist
 SELECT data FROM slot_peek(
 	'include', '{"table": "rf1", "where": "d > 10"}');
 ERROR:  operator does not exist: date > integer
+-- We survive an error happened in the change decoding.
+SELECT data FROM slot_peek(
+	'include', '{"table": "rf1", "where": "nofield = 42"}');
+ERROR:  column "nofield" does not exist
+SELECT slot_drop();
+slot_drop
+stop
+(1 row)
+SELECT slot_create();
+slot_create
+init
+(1 row)
+ALTER TABLE rf1 ADD bah int;
 SELECT slot_drop();
 slot_drop
 stop

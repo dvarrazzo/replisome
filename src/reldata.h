@@ -43,9 +43,11 @@ typedef struct JsonRelationEntry
 } JsonRelationEntry;
 
 
-HTAB *reldata_create(void);
+HTAB *reldata_create(MemoryContext ctx);
+void reldata_destroy(HTAB *reldata);
 JsonRelationEntry *reldata_find(HTAB *reldata, Oid relid);
 JsonRelationEntry *reldata_enter(HTAB *reldata, Oid relid);
+void reldata_free(JsonRelationEntry *entry);
 bool reldata_remove(HTAB *reldata, Oid relid);
 
 void reldata_to_invalidate(HTAB *reldata);

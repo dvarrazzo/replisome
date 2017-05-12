@@ -51,4 +51,12 @@ SELECT data FROM slot_peek(
 SELECT data FROM slot_peek(
 	'include', '{"table": "rf1", "where": "d > 10"}');
 
+-- We survive an error happened in the change decoding.
+SELECT data FROM slot_peek(
+	'include', '{"table": "rf1", "where": "nofield = 42"}');
+SELECT slot_drop();
+SELECT slot_create();
+ALTER TABLE rf1 ADD bah int;
+
+
 SELECT slot_drop();

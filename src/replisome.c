@@ -104,7 +104,8 @@ rs_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt, bool is
 
 	data->nr_changes = 0;
 
-	data->reldata = reldata_create();
+	data->reldata = reldata_create(ctx->context);
+	elog(DEBUG1, "reldata created at %p", data->reldata);
 
 	ctx->output_plugin_private = data;
 
@@ -246,6 +247,11 @@ static void
 rs_decode_shutdown(LogicalDecodingContext *ctx)
 {
 	JsonDecodingData *data = ctx->output_plugin_private;
+
+	elog(DEBUG1, "destroying reldata at %p", data->reldata);
+	reldata_to_invalidate(NULL);
+	reldata_destroy(data->reldata);
+	data->reldata = NULL;
 
 	/* cleanup our own resources via memory context reset */
 	MemoryContextDelete(data->context);
@@ -633,6 +639,13 @@ rs_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 	TupleDesc	indexdesc;
 	JsonRelationEntry *entry;
 
+	/* Stop receiving schema changes here too
+	 * If there is an error in the record decoding, the pointer to the
+	 * hash table to invalidate will remain there (no cleanup is invoked),
+	 * but will point to an address no more valid as the memory context
+	 * has gone. */
+	reldata_to_invalidate(NULL);
+
 	AssertVariableIsOfType(&rs_decode_change, LogicalDecodeChangeCB);
 
 	/* We are currently in the transaction context, so we cannot allocate here
@@ -901,4 +914,8 @@ rs_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 reset_ctx:
 	MemoryContextSwitchTo(old);
 	MemoryContextReset(data->context);
+
+	/* If we made it so far, we survived the record decoding! Pat on our back,
+	 * and now let's start listening to schema invalidation again. */
+	reldata_to_invalidate(data->reldata);
 }
