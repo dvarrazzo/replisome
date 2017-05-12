@@ -11,21 +11,19 @@
 typedef enum
 {
 	CMD_INCLUDE_ALL,
-	CMD_INCLUDE_TABLE,
-	CMD_INCLUDE_TABLE_PATTERN,
-	CMD_EXCLUDE_TABLE,
-	CMD_EXCLUDE_TABLE_PATTERN,
+	CMD_INCLUDE_TABLES,
+	CMD_EXCLUDE_TABLES,
 } CommandType;
 
 
 typedef struct InclusionCommand
 {
 	int			num;				/* number of the command (for debug) */
-	char		*schema_name;		/* name of schema to include/exclude */
-	char		*table_name;		/* name of table to include/exclude */
-	regex_t		table_re;			/* pattern of table names include/exclude */
-	dlist_node	node;				/* double-linked list */
 	CommandType	type;				/* what command is this? */
+	dlist_node	node;				/* double-linked list */
+
+	char		*table_name;		/* name of table to include/exclude */
+	regex_t		*table_re;			/* pattern of table names include/exclude */
 	Datum		columns;			/* columns to include as jsonb list */
 	Datum		skip_columns;		/* columns to ignore as jsonb list */
 	char		*row_filter;		/* only emit records matching this check */

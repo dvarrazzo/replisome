@@ -18,7 +18,7 @@ static void cmds_push(InclusionCommands *cmds, InclusionCommand *cmd);
 static InclusionCommand *cmds_tail(InclusionCommands *cmds);
 static InclusionCommand *cmd_at_tail(InclusionCommands *cmds, CommandType type);
 
-static void re_compile(regex_t *re, const char *p);
+static regex_t *re_compile(const char *p);
 static bool re_match(regex_t *re, const char *s);
 
 
@@ -42,13 +42,13 @@ inc_parse_include(DefElem *elem, InclusionCommands **cmds)
 	}
 
 	if ((s = jbu_getattr_str(jsonb, "table")) != NULL) {
-		cmd = cmd_at_tail(*cmds, CMD_INCLUDE_TABLE);
+		cmd = cmd_at_tail(*cmds, CMD_INCLUDE_TABLES);
 		cmd->table_name = s;
 		elog(DEBUG1, "command %d will match table \"%s\"", cmd->num, s);
 	}
 	else if ((s = jbu_getattr_str(jsonb, "tables")) != NULL) {
-		cmd = cmd_at_tail(*cmds, CMD_INCLUDE_TABLE_PATTERN);
-		re_compile(&cmd->table_re, s);
+		cmd = cmd_at_tail(*cmds, CMD_INCLUDE_TABLES);
+		cmd->table_re = re_compile(s);
 		pfree(s);
 		elog(DEBUG1, "command %d will match tables regexp \"%s\"", cmd->num, s);
 	}
@@ -132,13 +132,8 @@ inc_parse_exclude(DefElem *elem, InclusionCommands **cmds)
 
 	switch (cmd->type)
 	{
-		case CMD_INCLUDE_TABLE:
-			cmd->type = CMD_EXCLUDE_TABLE;
-			elog(DEBUG1, "command %d will exclude", cmd->num);
-			break;
-
-		case CMD_INCLUDE_TABLE_PATTERN:
-			cmd->type = CMD_EXCLUDE_TABLE_PATTERN;
+		case CMD_INCLUDE_TABLES:
+			cmd->type = CMD_EXCLUDE_TABLES;
 			elog(DEBUG1, "command %d will exclude", cmd->num);
 			break;
 
@@ -179,31 +174,43 @@ inc_should_emit(InclusionCommands *cmds, Relation relation,
 				*chosen_by = cmd;
 				break;
 
-			case CMD_INCLUDE_TABLE:
-				if (strcmp(cmd->table_name, NameStr(class_form->relname)) == 0) {
-					rv = true;
-					*chosen_by = cmd;
+			case CMD_INCLUDE_TABLES:
+				if (cmd->table_name) {
+					if (strcmp(cmd->table_name, NameStr(class_form->relname)) == 0) {
+						rv = true;
+						*chosen_by = cmd;
+					}
+				}
+				else if (cmd->table_re) {
+					if (re_match(cmd->table_re, NameStr(class_form->relname))) {
+						rv = true;
+						*chosen_by = cmd;
+					}
+				}
+				else {
+					ereport(ERROR,
+							(errcode(ERRCODE_INTERNAL_ERROR),
+							 errmsg("I don't know what to include")));
 				}
 				break;
 
-			case CMD_EXCLUDE_TABLE:
-				if (strcmp(cmd->table_name, NameStr(class_form->relname)) == 0) {
-					rv = false;
-					*chosen_by = cmd;
+			case CMD_EXCLUDE_TABLES:
+				if (cmd->table_name) {
+					if (strcmp(cmd->table_name, NameStr(class_form->relname)) == 0) {
+						rv = false;
+						*chosen_by = cmd;
+					}
 				}
-				break;
-
-			case CMD_INCLUDE_TABLE_PATTERN:
-				if (re_match(&cmd->table_re, NameStr(class_form->relname))) {
-					rv = true;
-					*chosen_by = cmd;
+				else if (cmd->table_re) {
+					if (re_match(cmd->table_re, NameStr(class_form->relname))) {
+						rv = false;
+						*chosen_by = cmd;
+					}
 				}
-				break;
-
-			case CMD_EXCLUDE_TABLE_PATTERN:
-				if (re_match(&cmd->table_re, NameStr(class_form->relname))) {
-					rv = false;
-					*chosen_by = cmd;
+				else {
+					ereport(ERROR,
+							(errcode(ERRCODE_INTERNAL_ERROR),
+							 errmsg("I don't know what to exclude")));
 				}
 				break;
 
@@ -272,13 +279,15 @@ cmd_at_tail(InclusionCommands *cmds, CommandType type)
 
 
 /* Compile a regular expression */
-static void
-re_compile(regex_t *re, const char *p)
+static regex_t *
+re_compile(const char *p)
 {
 	pg_wchar *wstr;
 	int wlen;
 	int r;
+	regex_t *re;
 
+	re = palloc(sizeof(regex_t));
 	wstr = palloc((strlen(p) + 1) * sizeof(pg_wchar));
 	wlen = pg_mb2wchar(p, wstr);
 
@@ -293,6 +302,7 @@ re_compile(regex_t *re, const char *p)
 	}
 
 	pfree(wstr);
+	return re;
 }
 
 
