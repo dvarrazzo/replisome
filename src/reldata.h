@@ -35,7 +35,10 @@ typedef struct JsonRelationEntry
 	char *colnames;
 	char *coltypes;
 
-	Node *row_filter;           /* Compiled expression to filter records */
+	/* Compiled structures to filter records */
+	Node *row_filter;
+	struct ExprState *exprstate;
+	struct EState *estate;
 
 } JsonRelationEntry;
 

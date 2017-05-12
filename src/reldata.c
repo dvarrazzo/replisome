@@ -82,6 +82,9 @@ reldata_remove(HTAB *reldata, Oid oid)
 	if (entry->coltypes)
 		pfree(entry->coltypes);
 
+	if (entry->estate)
+		FreeExecutorState(entry->estate);
+
 	hash_search(reldata, (void *)&(oid), HASH_REMOVE, NULL);
 	return true;
 }
@@ -157,9 +160,12 @@ reldata_complete(JsonRelationEntry *entry, Relation relation,
 		RelationClose(indexrel);
 	}
 
-	if (entry->chosen_by && entry->chosen_by->row_filter)
+	if (entry->chosen_by && entry->chosen_by->row_filter) {
 		entry->row_filter = parse_row_filter(
 			relation, entry->chosen_by->row_filter);
+		entry->exprstate = prepare_row_filter(entry->row_filter);
+		entry->estate = create_estate_for_relation(relation, false);
+	}
 }
 
 static void

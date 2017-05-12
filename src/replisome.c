@@ -727,36 +727,27 @@ rs_decode_change(LogicalDecodingContext *ctx, ReorderBufferTXN *txn,
 
 	if (entry->row_filter)
 	{
-		EState		   *estate;
+		Datum			res;
+		bool			isnull;
 		ExprContext	   *econtext;
-		TupleDesc		tupdesc = RelationGetDescr(relation);
+
 		HeapTuple		oldtup = change->data.tp.oldtuple ?
 			&change->data.tp.oldtuple->tuple : NULL;
 		HeapTuple		newtup = change->data.tp.newtuple ?
 			&change->data.tp.newtuple->tuple : NULL;
 
-		estate = create_estate_for_relation(relation, false);
-		econtext = prepare_per_tuple_econtext(estate, tupdesc);
+		Assert(entry->exprstate);
+		Assert(entry->estate);
 
+		econtext = prepare_per_tuple_econtext(entry->estate, tupdesc);
 		ExecStoreTuple(newtup ? newtup : oldtup, econtext->ecxt_scantuple,
-					   InvalidBuffer, false);
-		{
-			ExprState  *exprstate = prepare_row_filter(entry->row_filter);
-			Datum		res;
-			bool		isnull;
-
-			res = ExecEvalExpr(exprstate, econtext, &isnull, NULL);
-
-			/* NULL is same as false for our use. */
-			if (isnull)
-				goto reset_ctx;
-
-			if (!DatumGetBool(res))
-				goto reset_ctx;
-		}
-
+			InvalidBuffer, false);
+		res = ExecEvalExpr(entry->exprstate, econtext, &isnull, NULL);
 		ExecDropSingleTupleTableSlot(econtext->ecxt_scantuple);
-		FreeExecutorState(estate);
+
+		/* NULL is same as false for our use. */
+		if (isnull || !DatumGetBool(res))
+			goto reset_ctx;
 	}
 
 	if (!data->include_empty_xacts && data->nr_changes == 0)

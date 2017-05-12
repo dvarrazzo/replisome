@@ -38,7 +38,6 @@ create_estate_for_relation(Relation rel, bool hasTriggers)
 	ResultRelInfo *resultRelInfo;
 	RangeTblEntry *rte;
 
-
 	/* Dummy range table entry needed by executor. */
 	rte = makeNode(RangeTblEntry);
 	rte->rtekind = RTE_RELATION;
