@@ -10,7 +10,6 @@
 
 typedef enum
 {
-	CMD_INCLUDE_ALL,
 	CMD_INCLUDE_TABLES,
 	CMD_EXCLUDE_TABLES,
 } CommandType;

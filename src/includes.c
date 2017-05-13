@@ -132,7 +132,7 @@ inc_parse_exclude(DefElem *elem, InclusionCommands **cmds)
 	/* if the first command is an exclude, start including everything */
 	cmds_init(cmds);
 	if (cmds_is_empty(*cmds)) {
-		cmd = cmd_at_tail(*cmds, CMD_INCLUDE_ALL);
+		cmd = cmd_at_tail(*cmds, CMD_INCLUDE_TABLES);
 		elog(DEBUG1, "command %d will include everything", cmd->num);
 	}
 
@@ -192,11 +192,6 @@ inc_should_emit(InclusionCommands *cmds, Relation relation,
 		InclusionCommand *cmd = cmd_cont(iter.cur);
 		switch (cmd->type)
 		{
-			case CMD_INCLUDE_ALL:
-				rv = true;
-				*chosen_by = cmd;
-				break;
-
 			case CMD_INCLUDE_TABLES:
 				if (table_schema_match(cmd, class_form)) {
 					rv = true;
@@ -210,9 +205,6 @@ inc_should_emit(InclusionCommands *cmds, Relation relation,
 					*chosen_by = cmd;
 				}
 				break;
-
-			default:
-				Assert(false);
 		}
 	}
 
