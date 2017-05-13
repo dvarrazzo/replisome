@@ -24,6 +24,8 @@ typedef struct InclusionCommand
 
 	char		*table_name;		/* name of table to include/exclude */
 	regex_t		*table_re;			/* pattern of table names include/exclude */
+	char		*schema_name;		/* name of schema to include/exclude */
+	regex_t		*schema_re;			/* pattern of schema names include/exclude */
 	Datum		columns;			/* columns to include as jsonb list */
 	Datum		skip_columns;		/* columns to ignore as jsonb list */
 	char		*row_filter;		/* only emit records matching this check */

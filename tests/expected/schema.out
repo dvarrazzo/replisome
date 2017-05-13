@@ -1,0 +1,244 @@
+\set VERBOSITY terse
+\pset format unaligned
+-- predictability
+SET synchronous_commit = on;
+drop schema if exists s1 cascade;
+NOTICE:  schema "s1" does not exist, skipping
+drop schema if exists s2 cascade;
+NOTICE:  schema "s2" does not exist, skipping
+drop schema if exists s3 cascade;
+NOTICE:  schema "s3" does not exist, skipping
+create schema s1;
+create table s1.t (id int primary key, data text);
+create table s1.u (id int primary key, data text);
+create schema s2;
+create table s2.t (id int primary key, data text);
+create table s2.u (id int primary key, data text);
+create schema s3;
+create table s3.t (id int primary key, data text);
+select slot_create();
+slot_create
+init
+(1 row)
+insert into s1.t values (1, 's1.t');
+insert into s1.u values (1, 's1.u');
+insert into s2.t values (2, 's2.t');
+insert into s2.u values (2, 's2.u');
+insert into s3.t values (3, 's3.t');
+select data from slot_peek('include', '{"table": "t"}');
+data
+{
+	"change": [
+		{
+			"op": "I",
+			"schema": "s1",
+			"table": "t",
+			"colnames": ["id", "data"],
+			"coltypes": ["int4", "text"],
+			"values": [1, "s1.t"]
+		}
+	]
+}
+{
+	"change": [
+		{
+			"op": "I",
+			"schema": "s2",
+			"table": "t",
+			"colnames": ["id", "data"],
+			"coltypes": ["int4", "text"],
+			"values": [2, "s2.t"]
+		}
+	]
+}
+{
+	"change": [
+		{
+			"op": "I",
+			"schema": "s3",
+			"table": "t",
+			"colnames": ["id", "data"],
+			"coltypes": ["int4", "text"],
+			"values": [3, "s3.t"]
+		}
+	]
+}
+(3 rows)
+select data from slot_peek('include', '{"schema": "s1"}');
+data
+{
+	"change": [
+		{
+			"op": "I",
+			"schema": "s1",
+			"table": "t",
+			"colnames": ["id", "data"],
+			"coltypes": ["int4", "text"],
+			"values": [1, "s1.t"]
+		}
+	]
+}
+{
+	"change": [
+		{
+			"op": "I",
+			"schema": "s1",
+			"table": "u",
+			"colnames": ["id", "data"],
+			"coltypes": ["int4", "text"],
+			"values": [1, "s1.u"]
+		}
+	]
+}
+(2 rows)
+select data from slot_peek('include', '{"schemas": "s[23]"}');
+data
+{
+	"change": [
+		{
+			"op": "I",
+			"schema": "s2",
+			"table": "t",
+			"colnames": ["id", "data"],
+			"coltypes": ["int4", "text"],
+			"values": [2, "s2.t"]
+		}
+	]
+}
+{
+	"change": [
+		{
+			"op": "I",
+			"schema": "s2",
+			"table": "u",
+			"colnames": ["id", "data"],
+			"coltypes": ["int4", "text"],
+			"values": [2, "s2.u"]
+		}
+	]
+}
+{
+	"change": [
+		{
+			"op": "I",
+			"schema": "s3",
+			"table": "t",
+			"colnames": ["id", "data"],
+			"coltypes": ["int4", "text"],
+			"values": [3, "s3.t"]
+		}
+	]
+}
+(3 rows)
+select data from slot_peek('include', '{"schema": "s1", "table": "u"}');
+data
+{
+	"change": [
+		{
+			"op": "I",
+			"schema": "s1",
+			"table": "u",
+			"colnames": ["id", "data"],
+			"coltypes": ["int4", "text"],
+			"values": [1, "s1.u"]
+		}
+	]
+}
+(1 row)
+select data from slot_peek('exclude', '{"schema": "s1"}');
+data
+{
+	"change": [
+		{
+			"op": "I",
+			"schema": "s2",
+			"table": "t",
+			"colnames": ["id", "data"],
+			"coltypes": ["int4", "text"],
+			"values": [2, "s2.t"]
+		}
+	]
+}
+{
+	"change": [
+		{
+			"op": "I",
+			"schema": "s2",
+			"table": "u",
+			"colnames": ["id", "data"],
+			"coltypes": ["int4", "text"],
+			"values": [2, "s2.u"]
+		}
+	]
+}
+{
+	"change": [
+		{
+			"op": "I",
+			"schema": "s3",
+			"table": "t",
+			"colnames": ["id", "data"],
+			"coltypes": ["int4", "text"],
+			"values": [3, "s3.t"]
+		}
+	]
+}
+(3 rows)
+select data from slot_peek('exclude', '{"schemas": "s[23]"}');
+data
+{
+	"change": [
+		{
+			"op": "I",
+			"schema": "s1",
+			"table": "t",
+			"colnames": ["id", "data"],
+			"coltypes": ["int4", "text"],
+			"values": [1, "s1.t"]
+		}
+	]
+}
+{
+	"change": [
+		{
+			"op": "I",
+			"schema": "s1",
+			"table": "u",
+			"colnames": ["id", "data"],
+			"coltypes": ["int4", "text"],
+			"values": [1, "s1.u"]
+		}
+	]
+}
+(2 rows)
+select data from slot_peek('exclude', '{"schemas": "s."}', 'include', '{"table": "u"}');
+data
+{
+	"change": [
+		{
+			"op": "I",
+			"schema": "s1",
+			"table": "u",
+			"colnames": ["id", "data"],
+			"coltypes": ["int4", "text"],
+			"values": [1, "s1.u"]
+		}
+	]
+}
+{
+	"change": [
+		{
+			"op": "I",
+			"schema": "s2",
+			"table": "u",
+			"colnames": ["id", "data"],
+			"coltypes": ["int4", "text"],
+			"values": [2, "s2.u"]
+		}
+	]
+}
+(2 rows)
+select slot_drop();
+slot_drop
+stop
+(1 row)

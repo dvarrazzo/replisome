@@ -6,10 +6,11 @@
 #include "executor.h"
 
 #include "catalog/pg_collation.h"
+#include "utils/lsyscache.h"
 #include "utils/rel.h"
 
 
-/* forward declarations */
+static bool table_schema_match(InclusionCommand *cmd, Form_pg_class class_form);
 
 #define cmd_cont(n) dlist_container(InclusionCommand, node, n)
 static void cmds_init(InclusionCommands **cmds);
@@ -55,11 +56,28 @@ inc_parse_include(DefElem *elem, InclusionCommands **cmds)
 						 elem->defname, strVal(elem->arg))));
 		}
 		cmd->table_re = re_compile(s);
-		pfree(s);
 		elog(DEBUG1, "command %d will match tables regexp \"%s\"", cmd->num, s);
+		pfree(s);
 	}
 
-	if (!(cmd->table_name || cmd->table_re))
+	if ((s = jbu_getattr_str(jsonb, "schema")) != NULL) {
+		cmd->schema_name = s;
+		elog(DEBUG1, "command %d will match schema \"%s\"", cmd->num, s);
+	}
+
+	if ((s = jbu_getattr_str(jsonb, "schemas")) != NULL) {
+		if (cmd->schema_name) {
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("parameter \"%s\" can't specify both \"schema\" and \"schemas\": \"%s\"",
+						 elem->defname, strVal(elem->arg))));
+		}
+		cmd->schema_re = re_compile(s);
+		elog(DEBUG1, "command %d will match schemas regexp \"%s\"", cmd->num, s);
+		pfree(s);
+	}
+
+	if (!(cmd->table_name || cmd->table_re || cmd->schema_name || cmd->schema_re))
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
@@ -180,42 +198,16 @@ inc_should_emit(InclusionCommands *cmds, Relation relation,
 				break;
 
 			case CMD_INCLUDE_TABLES:
-				if (cmd->table_name) {
-					if (strcmp(cmd->table_name, NameStr(class_form->relname)) == 0) {
-						rv = true;
-						*chosen_by = cmd;
-					}
-				}
-				else if (cmd->table_re) {
-					if (re_match(cmd->table_re, NameStr(class_form->relname))) {
-						rv = true;
-						*chosen_by = cmd;
-					}
-				}
-				else {
-					ereport(ERROR,
-							(errcode(ERRCODE_INTERNAL_ERROR),
-							 errmsg("I don't know what to include")));
+				if (table_schema_match(cmd, class_form)) {
+					rv = true;
+					*chosen_by = cmd;
 				}
 				break;
 
 			case CMD_EXCLUDE_TABLES:
-				if (cmd->table_name) {
-					if (strcmp(cmd->table_name, NameStr(class_form->relname)) == 0) {
-						rv = false;
-						*chosen_by = cmd;
-					}
-				}
-				else if (cmd->table_re) {
-					if (re_match(cmd->table_re, NameStr(class_form->relname))) {
-						rv = false;
-						*chosen_by = cmd;
-					}
-				}
-				else {
-					ereport(ERROR,
-							(errcode(ERRCODE_INTERNAL_ERROR),
-							 errmsg("I don't know what to exclude")));
+				if (table_schema_match(cmd, class_form)) {
+					rv = false;
+					*chosen_by = cmd;
 				}
 				break;
 
@@ -232,6 +224,45 @@ inc_should_emit(InclusionCommands *cmds, Relation relation,
 			NameStr(class_form->relname), rv ? "yes" : "no");
 
 	return rv;
+}
+
+static bool
+table_schema_match(InclusionCommand *cmd, Form_pg_class class_form)
+{
+	bool table_match = false;
+	bool schema_match = false;
+
+	if (cmd->table_name) {
+		if (0 == strcmp(cmd->table_name, NameStr(class_form->relname))) {
+			table_match = true;
+		}
+	}
+	else if (cmd->table_re) {
+		if (re_match(cmd->table_re, NameStr(class_form->relname))) {
+			table_match = true;
+		}
+	}
+	else {
+		table_match = true;
+	}
+
+	if (cmd->schema_name) {
+		if (0 == strcmp(cmd->schema_name,
+				get_namespace_name(class_form->relnamespace))) {
+			schema_match = true;
+		}
+	}
+	else if (cmd->schema_re) {
+		if (re_match(cmd->schema_re,
+				get_namespace_name(class_form->relnamespace))) {
+			schema_match = true;
+		}
+	}
+	else {
+		schema_match = true;
+	}
+
+	return schema_match && table_match;
 }
 
 
