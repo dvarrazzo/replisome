@@ -24,19 +24,21 @@ class ReplisomeReceiver(object):
         self.dsn = dsn
         self.connection = None
         self.plugin = plugin
+        self.options = []
         if message_cb:
             self.message_cb = message_cb
 
         self._chunks = []
 
     def start(self, create=False):
-        self.connection = self.create_connection()
-
-        cur = self.connection.cursor()
+        cnn = self.connection = self.create_connection()
+        cur = cnn.cursor()
 
         if create:
             logger.info('creating replication slot "%s"', self.slot)
             cur.create_replication_slot(self.slot, output_plugin=self.plugin)
+
+        stmt = self.get_replication_statement(cnn)
 
         # NOTE: it is currently necessary to write in chunk even if this
         # results in messages containing invalid JSON (which are assembled
@@ -48,12 +50,10 @@ class ReplisomeReceiver(object):
         # transaction, the lsn is reset at the beginning of the transction
         # already seen, so some records are sent repeatedly.
         try:
-            pos = 0
             logger.info(
-                'starting streaming from slot "%s" at %s', self.slot, pos)
-            cur.start_replication(
-                self.slot, start_lsn=pos, decode=False,
-                options={'pretty-print': '0', 'write-in-chunks': '1'})
+                'starting streaming from slot "%s"', self.slot)
+
+            cur.start_replication_expert(stmt, decode=False)
             cur.consume_stream(self.consume, keepalive_interval=1)
         finally:
             self.close()
@@ -70,6 +70,30 @@ class ReplisomeReceiver(object):
                 raise ScriptError(
                     "replication slot '%s' not found" % self.slot)
             return rec[0]
+
+    def get_replication_statement(self, cnn):
+        options = (
+            [('write-in-chunks', '1')] +
+            self.options)
+
+        bits = [
+            sql.SQL("START_REPLICATION SLOT "),
+            sql.Identifier(self.slot) +
+            sql.SQL(" LOGICAL 0/0")]
+
+        if options:
+            bits.append(sql.SQL(' ('))
+            for k, v in options:
+                bits.append(sql.Identifier(k))
+                if v is not None:
+                    bits.append(sql.SQL(' '))
+                    bits.append(sql.Literal(v))
+                bits.append(sql.SQL(', '))
+            bits[-1] = sql.SQL(')')
+
+        rv = sql.Composed(bits).as_string(cnn)
+        logger.debug("replication statement: %s", rv)
+        return rv
 
     def consume(self, msg):
         cnn = msg.cursor.connection
@@ -218,6 +242,7 @@ def main():
     sa = SchemaApplier(opt.tgt_dsn)
     rr = ReplisomeReceiver(
         opt.slot, opt.src_dsn, message_cb=sa.process_message)
+    rr.options = opt.options
     try:
         rr.start(create=opt.create_slot)
     finally:
@@ -238,6 +263,9 @@ def parse_cmdline():
         'tgt_dsn',
         help="connection string to connect to and write data")
     parser.add_argument(
+        '-o', metavar="KEY=VALUE", action='append', dest='options',
+        default=[], help="pass some option to the decode plugin")
+    parser.add_argument(
         '--create-slot', action='store_true', default=False,
         help="create the slot before streaming")
     parser.add_argument(
@@ -248,6 +276,14 @@ def parse_cmdline():
         help="print more log messages")
 
     opt = parser.parse_args()
+
+    for i, o in enumerate(opt.options):
+        try:
+            k, v = o.split('=', 1)
+        except ValueError:
+            parser.error("bad option: %s" % o)
+        else:
+            opt.options[i] = (k, v)
 
     return opt
 
