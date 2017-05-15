@@ -5,3 +5,4 @@ replisome.so
 *.o
 README.html
 /env
+/.cache
