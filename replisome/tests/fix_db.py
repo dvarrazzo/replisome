@@ -8,6 +8,7 @@ from psycopg2.extras import LogicalReplicationConnection, wait_select
 
 @pytest.fixture
 def src_db():
+    "Return the source database to connect for testing"
     dsn = os.environ.get(
         "RS_TEST_SRC_DSN",
         'host=localhost dbname=rs_src_test')
@@ -20,6 +21,7 @@ def src_db():
 
 @pytest.fixture
 def tgt_db():
+    "Return the target database to connect for testing"
     dsn = os.environ.get(
         "RS_TEST_TGT_DSN",
         'host=localhost dbname=rs_tgt_test')
@@ -29,41 +31,72 @@ def tgt_db():
 
 
 class TestDatabase(object):
+    """
+    The representation of a database used for testing.
+
+    The database can be the sender of the receiver: a few methods may make
+    sense only in one case.
+
+    The object manages one replication slot.
+    """
     def __init__(self, dsn):
         self.dsn = dsn
         self.slot = 'rs_test'
         self.plugin = 'replisome'
 
-        self._conns = []
         self._repl_conn = self._conn = None
+        self._conns = []
         self._stop_callbacks = []
 
     @property
     def conn(self):
+        """
+        A connection to the database.
+
+        The object is always the same for the object lifetime.
+        """
         if not self._conn:
             self._conn = self.make_conn()
         return self._conn
 
     @property
     def repl_conn(self):
+        """
+        A replication connection to the database.
+
+        The object is always the same for the object lifetime.
+        """
         if not self._repl_conn:
             self._repl_conn = self.make_repl_conn()
         return self._repl_conn
 
     def teardown(self):
+        """
+        Close the database connections and stop any receiving thread.
+
+        Invoked at the end of the tests.
+        """
         for cb in self._stop_callbacks:
             cb()
 
-        if self._repl_conn:
-            self._repl_conn.close()
+        for cnn in self._conns:
+            cnn.close()
 
     def make_conn(self, autocommit=True, **kwargs):
+        """Create a new connection to the test database.
+
+        The connection is autocommit, and will be closed on teardown().
+        """
         cnn = psycopg2.connect(self.dsn, **kwargs)
         cnn.autocommit = autocommit
         self._conns.append(cnn)
         return cnn
 
     def make_repl_conn(self, **kwargs):
+        """Create a new replication connection to the test database.
+
+        The connection is asynchronous, and will be closed on teardown().
+        """
         cnn = psycopg2.connect(
             self.dsn, connection_factory=LogicalReplicationConnection,
             async_=True, **kwargs)
@@ -72,6 +105,7 @@ class TestDatabase(object):
         return cnn
 
     def drop_slot(self):
+        """Delete the replication slot with the current name if exists."""
         with self.make_conn() as cnn:
             cur = cnn.cursor()
             cur.execute("""
@@ -81,6 +115,12 @@ class TestDatabase(object):
                 """, (self.slot,))
 
     def create_slot(self, if_not_exists=False):
+        """Create the replication slot.
+
+        :param if_not_exists:
+            If True and the slot exists don't do anything.
+            If False create the slot (if it exists, die of error)
+        """
         with self.make_conn() as cnn:
             cur = cnn.cursor()
             if if_not_exists:

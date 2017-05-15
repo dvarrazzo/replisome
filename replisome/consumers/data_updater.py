@@ -8,6 +8,18 @@ import logging
 logger = logging.getLogger('replisome.postgres_user')
 
 
+def tupgetter(*idxs):
+    """Like itemgetter, but return a 1-tuple if the input is one index."""
+    if len(idxs) == 1:
+        def tupgetter_(obj, _idx=idxs[0]):
+            return (obj[_idx],)
+
+        return tupgetter_
+
+    else:
+        return itemgetter(*idxs)
+
+
 class DataUpdater(object):
     def __init__(self, dsn):
         """
@@ -155,21 +167,11 @@ class DataUpdater(object):
 
             acc = itemgetter('values')
 
-        elif len(idxs) == 1:
-            logger.debug(
-                "the local table has one field in common with the message")
-
-            def colmap(values, i=idxs[0]):
-                return (values[i],)
-
-            def acc(msg, i=idxs[0]):
-                return (msg['values'][i],)
-
         else:
             logger.debug(
                 "the local table has %d field in common with the message",
                 len(idxs))
-            colmap = itemgetter(*idxs)
+            colmap = tupgetter(*idxs)
 
             def acc(msg, colmap=colmap):
                 return colmap(msg['values'])
@@ -186,6 +188,71 @@ class DataUpdater(object):
         bits.append(sql.SQL(') values ('))
         bits.append(sql.SQL(',').join(sql.Placeholder() * len(cols)))
         bits.append(sql.SQL(')'))
+        stmt = sql.Composed(bits).as_string(cnn)
+
+        logger.debug("generated query: %s", stmt)
+
+        return stmt, acc
+
+    def make_update(self, cnn, msg):
+        """
+        Return the query and message-to-argument function to perform an update.
+        """
+        s = msg.get('schema')
+        t = msg['table']
+        local_cols = self.get_table_columns(cnn, s, t)
+        if local_cols is None:
+            logger.debug("table %s.%s not available", s, t)
+            return None, None
+
+        local_cols = set(local_cols)
+        msg_cols = self._colnames[self.key(msg)]
+        msg_keys = self._keynames[self.key(msg)]
+
+        # the key must be entirely known
+        kidxs = [i for i, c in enumerate(msg_keys) if c in local_cols]
+        if not(kidxs):
+            raise ValueError("the table %s.%s has no key" % (s, t))
+
+        if len(kidxs) != len(msg_keys):
+            raise ValueError(
+                "the local table %s.%s is missing some key fields %s" %
+                (s, t, msg_keys))
+
+        idxs = [i for i, c in enumerate(msg_cols) if c in local_cols]
+        if not idxs:
+            logger.debug(
+                "the local table has no field in common with the message")
+            return None, None
+
+        colmap = tupgetter(*idxs)
+        keymap = tupgetter(*kidxs)
+
+        logger.debug(
+            "the local table has %d field in common with the message",
+            len(idxs))
+
+        def acc(msg, _colmap=colmap, _keymap=keymap):
+            return _colmap(msg['values']) + _keymap(msg['oldkey'])
+
+        cols = colmap(msg_cols)
+        keycols = keymap(msg_keys)
+
+        bits = [sql.SQL('update ')]
+        if 'schema' in msg:
+            bits.append(sql.Identifier(msg['schema']))
+            bits.append(sql.SQL('.'))
+        bits.append(sql.Identifier(msg['table']))
+        bits.append(sql.SQL(' set ('))
+        bits.append(sql.SQL(',').join(map(sql.Identifier, cols)))
+        bits.append(sql.SQL(') = ('))
+        bits.append(sql.SQL(',').join(sql.Placeholder() * len(cols)))
+        bits.append(sql.SQL(') where ('))
+        bits.append(sql.SQL(',').join(map(sql.Identifier, keycols)))
+        bits.append(sql.SQL(') = ('))
+        bits.append(sql.SQL(',').join(sql.Placeholder() * len(keycols)))
+        bits.append(sql.SQL(')'))
+
         stmt = sql.Composed(bits).as_string(cnn)
 
         logger.debug("generated query: %s", stmt)
