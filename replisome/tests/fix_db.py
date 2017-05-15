@@ -1,4 +1,6 @@
 import os
+from threading import Thread
+
 import pytest
 import psycopg2
 from psycopg2.extras import LogicalReplicationConnection, wait_select
@@ -16,6 +18,16 @@ def src_db():
     db.teardown()
 
 
+@pytest.fixture
+def tgt_db():
+    dsn = os.environ.get(
+        "RS_TEST_TGT_DSN",
+        'host=localhost dbname=rs_tgt_test')
+    db = TestDatabase(dsn)
+    yield db
+    db.teardown()
+
+
 class TestDatabase(object):
     def __init__(self, dsn):
         self.dsn = dsn
@@ -24,6 +36,7 @@ class TestDatabase(object):
 
         self._conns = []
         self._repl_conn = self._conn = None
+        self._stop_callbacks = []
 
     @property
     def conn(self):
@@ -38,6 +51,9 @@ class TestDatabase(object):
         return self._repl_conn
 
     def teardown(self):
+        for cb in self._stop_callbacks:
+            cb()
+
         if self._repl_conn:
             self._repl_conn.close()
 
@@ -77,3 +93,15 @@ class TestDatabase(object):
             cur.execute(
                 "select pg_create_logical_replication_slot(%s, %s)",
                 [self.slot, self.plugin])
+
+    def thread_receive(self, receiver, connection, target=None):
+        """
+        Run the receiver loop of a receiver in a thread.
+
+        Stop the receiver at the end of the test.
+        """
+        self._stop_callbacks.append(receiver.stop)
+        if not target:
+            target = receiver.start
+        t = Thread(target=target, args=(connection,))
+        t.start()

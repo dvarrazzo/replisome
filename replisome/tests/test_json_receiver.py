@@ -1,6 +1,5 @@
 import pytest
 from Queue import Queue, Empty
-from threading import Thread
 
 from replisome.receivers.json_receiver import JsonReceiver
 
@@ -8,8 +7,7 @@ from replisome.receivers.json_receiver import JsonReceiver
 def test_insert(src_db):
     r = Receiver()
     jr = JsonReceiver(slot=src_db.slot, message_cb=r.receive)
-    t = Thread(target=jr.start, args=(src_db.repl_conn,))
-    t.start()
+    src_db.thread_receive(jr, src_db.repl_conn)
 
     cur = src_db.conn.cursor()
     cur.execute("""
@@ -105,8 +103,7 @@ def test_break_half_message(src_db):
             has_broken.append(True)
 
     cnn = src_db.make_repl_conn()
-    t = Thread(target=wrapper, args=(cnn,))
-    t.start()
+    src_db.thread_receive(jr, cnn, target=wrapper)
 
     cur = src_db.conn.cursor()
     cur.execute("drop table if exists somedata")
@@ -127,13 +124,11 @@ def test_break_half_message(src_db):
     cnn = src_db.make_repl_conn()
 
     jr = JsonReceiver(slot=src_db.slot, message_cb=r.receive)
-    t = Thread(target=jr.start, args=(cnn,))
-    t.start()
+    src_db.thread_receive(jr, cnn)
 
     cur.execute("insert into somedata default values")
 
     d = r.received.get(timeout=1)
-    jr.stop()
 
     assert len(d['change']) == 1
     c = d['change'][0]
