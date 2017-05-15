@@ -259,6 +259,54 @@ class DataUpdater(object):
 
         return stmt, acc
 
+    def make_delete(self, cnn, msg):
+        """
+        Return the query and message-to-argument function to perform a delete.
+        """
+        s = msg.get('schema')
+        t = msg['table']
+        local_cols = self.get_table_columns(cnn, s, t)
+        if local_cols is None:
+            logger.debug("table %s.%s not available", s, t)
+            return None, None
+
+        local_cols = set(local_cols)
+        msg_keys = self._keynames[self.key(msg)]
+
+        # the key must be entirely known
+        kidxs = [i for i, c in enumerate(msg_keys) if c in local_cols]
+        if not(kidxs):
+            raise ValueError("the table %s.%s has no key" % (s, t))
+
+        if len(kidxs) != len(msg_keys):
+            raise ValueError(
+                "the local table %s.%s is missing some key fields %s" %
+                (s, t, msg_keys))
+
+        keymap = tupgetter(*kidxs)
+
+        def acc(msg, _keymap=keymap):
+            return _keymap(msg['oldkey'])
+
+        keycols = keymap(msg_keys)
+
+        bits = [sql.SQL('delete from ')]
+        if 'schema' in msg:
+            bits.append(sql.Identifier(msg['schema']))
+            bits.append(sql.SQL('.'))
+        bits.append(sql.Identifier(msg['table']))
+        bits.append(sql.SQL(' where ('))
+        bits.append(sql.SQL(',').join(map(sql.Identifier, keycols)))
+        bits.append(sql.SQL(') = ('))
+        bits.append(sql.SQL(',').join(sql.Placeholder() * len(keycols)))
+        bits.append(sql.SQL(')'))
+
+        stmt = sql.Composed(bits).as_string(cnn)
+
+        logger.debug("generated query: %s", stmt)
+
+        return stmt, acc
+
     def get_table_columns(self, cnn, schema, table):
         """
         Return the list of column names in a table, optionally schema-qualified

@@ -131,3 +131,53 @@ def test_update(src_db, tgt_db):
 
     tcur.execute("select id from testup where id = 3")
     assert tcur.fetchone()[0] == 3
+
+
+def test_delete(src_db, tgt_db):
+    du = DataUpdater(tgt_db.conn.dsn)
+    q = Queue()     # For synchronization
+
+    def cb(msg):
+        du.process_message(msg)
+        q.put(None)
+
+    jr = JsonReceiver(slot=src_db.slot, message_cb=cb)
+    src_db.thread_receive(jr, src_db.make_repl_conn())
+
+    scur = src_db.conn.cursor()
+    tcur = tgt_db.conn.cursor()
+
+    scur.execute("drop table if exists testdel")
+    scur.execute(
+        "create table testdel (id serial primary key, data text)")
+
+    tcur.execute("drop table if exists testdel")
+    tcur.execute(
+        "create table testdel (id serial primary key, data text)")
+
+    scur.execute("insert into testdel (data) values ('hello')")
+    scur.execute("insert into testdel (data) values ('world')")
+    scur.execute("delete from testdel where id = 2")
+    scur.execute("insert into testdel (data) values ('mama')")
+
+    for i in range(4):
+        q.get(timeout=1)
+
+    tcur.execute("select id, data from testdel order by id")
+    rs = tcur.fetchall()
+    assert rs == [(1, 'hello'), (3, 'mama')]
+
+    # Missing tables are ignored
+    scur.execute("drop table if exists notable")
+    scur.execute(
+        "create table notable (id serial primary key)")
+
+    scur.execute("insert into notable default values")
+    q.get(timeout=1)
+    scur.execute("delete from notable where id = 1")
+    q.get(timeout=1)
+    scur.execute("insert into testdel default values")
+    q.get(timeout=1)
+
+    tcur.execute("select id from testdel where id = 4")
+    assert tcur.fetchone()[0] == 4
