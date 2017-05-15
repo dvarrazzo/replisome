@@ -1,5 +1,6 @@
+import pytest
+from Queue import Queue, Empty
 from threading import Thread
-from Queue import Queue
 
 from replisome.receivers.json_receiver import JsonReceiver
 
@@ -82,6 +83,63 @@ def test_insert(src_db):
     assert 'oldkey' not in c
 
     jr.stop()
+
+
+def test_break_half_message(src_db):
+    has_broken = []
+
+    class BrokenReceiver(JsonReceiver):
+        def consume(self, msg):
+            # Throw a tantrum just before closing the message
+            if msg.payload == ']}':
+                raise ZeroDivisionError
+            return super(BrokenReceiver, self).consume(msg)
+
+    r = Receiver()
+    jr = BrokenReceiver(slot=src_db.slot, message_cb=r.receive)
+
+    def wrapper(cnn):
+        try:
+            jr.start(cnn)
+        except ZeroDivisionError:
+            has_broken.append(True)
+
+    cnn = src_db.make_repl_conn()
+    t = Thread(target=wrapper, args=(cnn,))
+    t.start()
+
+    cur = src_db.conn.cursor()
+    cur.execute("drop table if exists somedata")
+    cur.execute("create table somedata (id serial primary key)")
+    cur.execute("insert into somedata default values")
+
+    try:
+        d = r.received.get(timeout=1)
+    except Empty:
+        assert has_broken
+    else:
+        pytest.fail("not broken enough, got message %s" % d)
+
+    jr.stop()
+
+    # Replace the receiver with something working
+    cnn.close()
+    cnn = src_db.make_repl_conn()
+
+    jr = JsonReceiver(slot=src_db.slot, message_cb=r.receive)
+    t = Thread(target=jr.start, args=(cnn,))
+    t.start()
+
+    cur.execute("insert into somedata default values")
+
+    d = r.received.get(timeout=1)
+    jr.stop()
+
+    assert len(d['change']) == 1
+    c = d['change'][0]
+    assert c['table'] == 'somedata'
+    assert c['schema'] == 'public'
+    assert c['values'] == [1]
 
 
 class Receiver(object):
