@@ -6,3 +6,5 @@ replisome.so
 README.html
 /env
 /.cache
+/build
+/replisome.egg-info/
