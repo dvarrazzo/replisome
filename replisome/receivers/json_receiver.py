@@ -1,6 +1,9 @@
+import os
 import json
+from select import select
 
-import psycopg2.extras
+import psycopg2
+from psycopg2.extras import LogicalReplicationConnection, wait_select
 from psycopg2 import sql
 
 import logging
@@ -8,26 +11,34 @@ logger = logging.getLogger('replisome.json_receiver')
 
 
 class JsonReceiver(object):
-    def __init__(self, slot, dsn, plugin="replisome", message_cb=None):
+    def __init__(self, slot, dsn=None, message_cb=None,
+            plugin="replisome", options=None):
         self.slot = slot
         self.dsn = dsn
-        self.connection = None
         self.plugin = plugin
-        self.options = []
+        self.options = options or []
         if message_cb:
             self.message_cb = message_cb
 
+        self._shutdown_pipe = os.pipe()
+
         self._chunks = []
 
-    def start(self, create=False):
-        cnn = self.connection = self.create_connection()
-        cur = cnn.cursor()
+    def __del__(self):
+        self.stop()
+
+    def start(self, connection, create=False):
+        if not connection.async_:
+            raise ValueError("the connection should be asynchronous")
+
+        cur = connection.cursor()
 
         if create:
             logger.info('creating replication slot "%s"', self.slot)
             cur.create_replication_slot(self.slot, output_plugin=self.plugin)
+            wait_select(connection)
 
-        stmt = self.get_replication_statement(cnn)
+        stmt = self.get_replication_statement(connection)
 
         # NOTE: it is currently necessary to write in chunk even if this
         # results in messages containing invalid JSON (which are assembled
@@ -38,14 +49,28 @@ class JsonReceiver(object):
         # end up being correct. If the message encompasses the entire
         # transaction, the lsn is reset at the beginning of the transction
         # already seen, so some records are sent repeatedly.
-        try:
-            logger.info(
-                'starting streaming from slot "%s"', self.slot)
+        logger.info(
+            'starting streaming from slot "%s"', self.slot)
 
-            cur.start_replication_expert(stmt, decode=False)
-            cur.consume_stream(self.consume, keepalive_interval=1)
-        finally:
-            self.close()
+        cur.start_replication_expert(stmt, decode=False)
+        wait_select(connection)
+
+        while 1:
+            msg = cur.read_message()
+            if msg:
+                self.consume(msg)
+                continue
+
+            # TODO: handle InterruptedError
+            sel = select(
+                [self._shutdown_pipe[0], connection], [], [], 10)
+            if not any(sel):
+                cur.send_feedback()
+            elif self._shutdown_pipe[0] in sel[0]:
+                break
+
+    def stop(self):
+        os.write(self._shutdown_pipe[1], 'stop')
 
     def get_replication_statement(self, cnn):
         options = (
@@ -94,28 +119,27 @@ class JsonReceiver(object):
     def message_cb(self, obj):
         logger.info("message received: %s", obj)
 
-    def create_connection(self):
+    def create_connection(self, async_=True):
         logger.info('connecting to source database at "%s"', self.dsn)
-        return psycopg2.connect(
-            self.dsn,
-            connection_factory=psycopg2.extras.LogicalReplicationConnection)
+        cnn = psycopg2.connect(
+            self.dsn, async_=async_,
+            connection_factory=LogicalReplicationConnection)
+        wait_select(cnn)
+        return cnn
 
     def drop_slot(self):
         try:
-            cnn = self.create_connection()
-            cur = cnn.cursor()
-            logger.info('dropping replication slot "%s"', self.slot)
-            cur.drop_replication_slot(self.slot)
-            cnn.close()
+            with self.create_connection(async_=False) as cnn:
+                cur = cnn.cursor()
+                logger.info('dropping replication slot "%s"', self.slot)
+                cur.drop_replication_slot(self.slot)
         except Exception as e:
             logger.error(
                 "error dropping replication slot: %s", e)
 
-    def close(self):
-        if not self.connection:
-            return
+    def close(self, connection):
         try:
-            self.connection.close()
+            connection.close()
         except Exception as e:
             logger.error(
                 "error closing receiving connection - ignoring: %s", e)

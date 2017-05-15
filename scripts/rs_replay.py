@@ -23,15 +23,17 @@ def main():
     if opt.verbose:
         logger.setLevel(logging.DEBUG)
 
-    sa = DataUpdater(opt.tgt_dsn)
-    rr = JsonReceiver(
-        opt.slot, opt.src_dsn, message_cb=sa.process_message)
-    rr.options = opt.options
+    du = DataUpdater(opt.tgt_dsn)
+    jr = JsonReceiver(
+        slot=opt.slot, dsn=opt.src_dsn, message_cb=du.process_message,
+        options=opt.options)
+    cnn = jr.create_connection()
     try:
-        rr.start(create=opt.create_slot)
+        jr.start(cnn, create=opt.create_slot)
     finally:
+        cnn.close()
         if opt.drop_slot:
-            rr.drop_slot()
+            jr.drop_slot()
 
 
 def parse_cmdline():
