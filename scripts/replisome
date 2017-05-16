@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+"""Receive data from a database, do something with it.
+"""
+
+from replisome.cli import entry_point
+entry_point()

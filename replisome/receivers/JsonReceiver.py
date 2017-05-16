@@ -6,12 +6,14 @@ import psycopg2
 from psycopg2.extras import LogicalReplicationConnection, wait_select
 from psycopg2 import sql
 
+from replisome.errors import ConfigError
+
 import logging
 logger = logging.getLogger('replisome.JsonReceiver')
 
 
 class JsonReceiver(object):
-    def __init__(self, slot, dsn=None, message_cb=None,
+    def __init__(self, slot=None, dsn=None, message_cb=None,
             plugin="replisome", options=None):
         self.slot = slot
         self.dsn = dsn
@@ -24,10 +26,40 @@ class JsonReceiver(object):
 
         self._chunks = []
 
+    @classmethod
+    def from_config(cls, config):
+        opts = []
+        # TODO: make them the same (parse the underscore version in the plugin)
+        for k in ('pretty_print', 'include_xids', 'include_lsn',
+                  'include_timestamp', 'include_schemas', 'include_types',
+                  'include_empty_xacts'):
+            if k in config:
+                v = config.pop(k)
+                opts.append((k.replace('_', '-'), (v and 't' or 'f')))
+
+        incs = config.pop('includes', [])
+        if not isinstance(incs, list):
+            raise ConfigError('includes should be a list, got %s' % (incs,))
+
+        for inc in incs:
+            # TODO: this might be parsed by the plugin
+            k = inc.pop('exclude', False) and 'exclude' or 'include'
+            opts.append((k, json.dumps(inc)))
+
+        if config:
+            raise ConfigError(
+                "unknown %s option entries: %s" %
+                (cls.__name__, ', '.join(sorted(config))))
+
+        return cls(options=opts)
+
     def __del__(self):
         self.stop()
 
     def start(self, connection, create=False):
+        if not self.slot:
+            raise ValueError("no slot specified")
+
         if not connection.async_:
             raise ValueError("the connection should be asynchronous")
 

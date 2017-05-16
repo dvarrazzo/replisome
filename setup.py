@@ -22,7 +22,7 @@ setup(
     url='https://github.com/dvarrazzo/wal2json/tree/replisome',
     keywords=['database', 'replication', 'PostgreSQL'],
     classifiers=[x for x in classifiers.strip().splitlines()],
-    install_requires=['psycopg2>=2.7'],
+    install_requires=['PyYAML', 'psycopg2>=2.7'],
     tests_require=['pytest'],
     zip_safe=False,
 )

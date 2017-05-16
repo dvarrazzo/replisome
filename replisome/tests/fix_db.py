@@ -70,6 +70,9 @@ class TestDatabase(object):
             self._repl_conn = self.make_repl_conn()
         return self._repl_conn
 
+    def at_exit(self, cb):
+        self._stop_callbacks.append(cb)
+
     def teardown(self):
         """
         Close the database connections and stop any receiving thread.
@@ -140,8 +143,14 @@ class TestDatabase(object):
 
         Stop the receiver at the end of the test.
         """
-        self._stop_callbacks.append(receiver.stop)
-        if not target:
-            target = receiver.start
-        t = Thread(target=target, args=(connection,))
+        self.thread_run(
+            target=target or receiver.start, at_exit=receiver.stop,
+            args=(connection,))
+
+    def thread_run(self, target, at_exit=None, args=()):
+        """Call a function in a thread. Call another function on stop."""
+        if at_exit:
+            self.at_exit(at_exit)
+
+        t = Thread(target=target, args=args)
         t.start()

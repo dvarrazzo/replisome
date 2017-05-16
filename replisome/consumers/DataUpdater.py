@@ -83,6 +83,9 @@ class DataUpdater(object):
         finally:
             self.put_connection(cnn)
 
+    def __call__(self, msg):
+        self.process_message(msg)
+
     def process_change(self, cnn, msg):
         """
         Process one of the changes in a replisome message.
