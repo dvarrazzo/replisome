@@ -7,7 +7,7 @@ from psycopg2.extras import LogicalReplicationConnection, wait_select
 from psycopg2 import sql
 
 import logging
-logger = logging.getLogger('replisome.json_receiver')
+logger = logging.getLogger('replisome.JsonReceiver')
 
 
 class JsonReceiver(object):

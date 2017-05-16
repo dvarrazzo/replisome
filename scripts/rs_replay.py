@@ -2,8 +2,8 @@
 
 import sys
 
-from replisome.receivers.json_receiver import JsonReceiver
-from replisome.consumers.data_updater import DataUpdater
+from replisome.receivers.JsonReceiver import JsonReceiver
+from replisome.consumers.DataUpdater import DataUpdater
 
 import logging
 logging.basicConfig(

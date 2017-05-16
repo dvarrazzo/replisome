@@ -1,7 +1,7 @@
 import pytest
 from Queue import Queue, Empty
 
-from replisome.receivers.json_receiver import JsonReceiver
+from replisome.receivers.JsonReceiver import JsonReceiver
 
 
 def test_insert(src_db):

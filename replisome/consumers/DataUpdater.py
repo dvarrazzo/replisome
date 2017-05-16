@@ -5,7 +5,7 @@ from psycopg2 import extensions as ext
 from psycopg2 import sql
 
 import logging
-logger = logging.getLogger('replisome.postgres_user')
+logger = logging.getLogger('replisome.DataUpdater')
 
 
 def tupgetter(*idxs):
