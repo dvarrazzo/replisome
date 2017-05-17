@@ -25,4 +25,9 @@ setup(
     install_requires=['PyYAML', 'psycopg2>=2.7'],
     tests_require=['pytest'],
     zip_safe=False,
+    entry_points={
+        'console_scripts': [
+            'replisome = replisome.cli:entry_point',
+        ],
+    },
 )
