@@ -1,18 +1,12 @@
-from Queue import Queue
-
 from replisome.consumers.DataUpdater import DataUpdater
 from replisome.receivers.JsonReceiver import JsonReceiver
 
 
-def test_insert(src_db, tgt_db):
+def test_insert(src_db, tgt_db, called):
     du = DataUpdater(tgt_db.conn.dsn)
-    q = Queue()     # For synchronization
+    c = called(du, 'process_message')
 
-    def cb(msg):
-        du.process_message(msg)
-        q.put(None)
-
-    jr = JsonReceiver(slot=src_db.slot, message_cb=cb)
+    jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)
     src_db.thread_receive(jr, src_db.make_repl_conn())
 
     scur = src_db.conn.cursor()
@@ -32,7 +26,7 @@ def test_insert(src_db, tgt_db):
         """)
 
     scur.execute("insert into testins (data) values ('hello')")
-    q.get(timeout=1)
+    c.get()
     tcur.execute("select * from testins")
     rs = tcur.fetchall()
     assert len(rs) == 1
@@ -46,7 +40,7 @@ def test_insert(src_db, tgt_db):
     scur.execute("insert into testins default values")
     scur.execute("commit")
 
-    q.get(timeout=1)
+    c.get()
     tcur.execute("select * from testins where id > 1 order by id")
     rs = tcur.fetchall()
     assert len(rs) == 2
@@ -63,23 +57,19 @@ def test_insert(src_db, tgt_db):
         "create table notable (id serial primary key)")
 
     scur.execute("insert into notable default values")
-    q.get(timeout=1)
+    c.get()
     scur.execute("insert into testins default values")
-    q.get(timeout=1)
+    c.get()
 
     tcur.execute("select max(id) from testins")
     assert tcur.fetchone()[0] == 4
 
 
-def test_update(src_db, tgt_db):
+def test_update(src_db, tgt_db, called):
     du = DataUpdater(tgt_db.conn.dsn)
-    q = Queue()     # For synchronization
+    c = called(du, 'process_message')
 
-    def cb(msg):
-        du.process_message(msg)
-        q.put(None)
-
-    jr = JsonReceiver(slot=src_db.slot, message_cb=cb)
+    jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)
     src_db.thread_receive(jr, src_db.make_repl_conn())
 
     scur = src_db.conn.cursor()
@@ -103,7 +93,7 @@ def test_update(src_db, tgt_db):
     scur.execute("update testup set data = 'mama' where id = 2")
 
     for i in range(3):
-        q.get(timeout=1)
+        c.get()
 
     tcur.execute("select id, data from testup order by id")
     rs = tcur.fetchall()
@@ -111,7 +101,7 @@ def test_update(src_db, tgt_db):
 
     # The key can change too
     scur.execute("update testup set id = 22 where id = 2")
-    q.get(timeout=1)
+    c.get()
 
     tcur.execute("select id, data from testup order by id")
     rs = tcur.fetchall()
@@ -123,25 +113,21 @@ def test_update(src_db, tgt_db):
         "create table notable (id serial primary key)")
 
     scur.execute("insert into notable default values")
-    q.get(timeout=1)
+    c.get()
     scur.execute("update notable set id = 2 where id = 1")
-    q.get(timeout=1)
+    c.get()
     scur.execute("insert into testup default values")
-    q.get(timeout=1)
+    c.get()
 
     tcur.execute("select id from testup where id = 3")
     assert tcur.fetchone()[0] == 3
 
 
-def test_delete(src_db, tgt_db):
+def test_delete(src_db, tgt_db, called):
     du = DataUpdater(tgt_db.conn.dsn)
-    q = Queue()     # For synchronization
+    c = called(du, 'process_message')
 
-    def cb(msg):
-        du.process_message(msg)
-        q.put(None)
-
-    jr = JsonReceiver(slot=src_db.slot, message_cb=cb)
+    jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)
     src_db.thread_receive(jr, src_db.make_repl_conn())
 
     scur = src_db.conn.cursor()
@@ -161,7 +147,7 @@ def test_delete(src_db, tgt_db):
     scur.execute("insert into testdel (data) values ('mama')")
 
     for i in range(4):
-        q.get(timeout=1)
+        c.get()
 
     tcur.execute("select id, data from testdel order by id")
     rs = tcur.fetchall()
@@ -173,11 +159,11 @@ def test_delete(src_db, tgt_db):
         "create table notable (id serial primary key)")
 
     scur.execute("insert into notable default values")
-    q.get(timeout=1)
+    c.get()
     scur.execute("delete from notable where id = 1")
-    q.get(timeout=1)
+    c.get()
     scur.execute("insert into testdel default values")
-    q.get(timeout=1)
+    c.get()
 
     tcur.execute("select id from testdel where id = 4")
     assert tcur.fetchone()[0] == 4
