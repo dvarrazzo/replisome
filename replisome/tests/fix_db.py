@@ -47,6 +47,7 @@ class TestDatabase(object):
         self._repl_conn = self._conn = None
         self._conns = []
         self._stop_callbacks = []
+        self._slot_created = False
 
     @property
     def conn(self):
@@ -85,6 +86,9 @@ class TestDatabase(object):
         for cnn in self._conns:
             cnn.close()
 
+        if self._slot_created:
+            self.drop_slot()
+
     def make_conn(self, autocommit=True, **kwargs):
         """Create a new connection to the test database.
 
@@ -117,6 +121,10 @@ class TestDatabase(object):
                 where slot_name = %s
                 """, (self.slot,))
 
+        # Closing explicitly as the function can be called in teardown, after
+        # other connections (maybe using the slot) have been closed.
+        cnn.close()
+
     def create_slot(self, if_not_exists=False):
         """Create the replication slot.
 
@@ -136,6 +144,8 @@ class TestDatabase(object):
             cur.execute(
                 "select pg_create_logical_replication_slot(%s, %s)",
                 [self.slot, self.plugin])
+
+            self._slot_created = True
 
     def thread_receive(self, receiver, connection, target=None):
         """
