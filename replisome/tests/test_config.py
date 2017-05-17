@@ -19,6 +19,12 @@ receiver:
             table: account
             skip_columns: [password]
 
+filters:
+  - class: TableRenamer
+    options:
+        from_schema: myapp
+        to_schema: otherapp
+
 consumer:
     class: DataUpdater
     options:
@@ -74,7 +80,7 @@ def test_pipeline(configfile, src_db, tgt_db, called):
     scur = src_db.conn.cursor()
     scur.execute(SRC_SCHEMA)
     tcur = tgt_db.conn.cursor()
-    tcur.execute(SRC_SCHEMA)
+    tcur.execute(SRC_SCHEMA.replace('myapp', 'otherapp'))
 
     conf = config.parse_yaml(configfile)
     pl = config.make_pipeline(conf)
@@ -104,14 +110,14 @@ def test_pipeline(configfile, src_db, tgt_db, called):
     for i in range(3):
         c.get()
 
-    tcur.execute("select username, password from myapp.account order by 1")
+    tcur.execute("select username, password from otherapp.account order by 1")
     assert tcur.fetchall() == [('acc1', None), ('acc2', None)]
 
-    tcur.execute("select id from myapp.useless")
+    tcur.execute("select id from otherapp.useless")
     assert tcur.fetchall() == []
 
-    tcur.execute("select username, password from myapp.account order by 1")
+    tcur.execute("select username, password from otherapp.account order by 1")
     assert tcur.fetchall() == [('acc1', None), ('acc2', None)]
 
-    tcur.execute("select id, seller from myapp.contract order by 1")
+    tcur.execute("select id, seller from otherapp.contract order by 1")
     assert tcur.fetchall() == [(1, 'alice'), (3, 'bob')]
