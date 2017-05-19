@@ -169,7 +169,13 @@ def test_insert_conflict(src_db, tgt_db, called):
         "insert into testins (id, data, foo, n) values (1, 'foo', 'ouch', 42)")
     scur.execute(
         "insert into testins (data, foo, more) values ('baz', 'qux', 'quux')")
-    c.get()
+
+    if tgt_db.conn.server_version >= 90500:
+        c.get()
+    else:
+        with pytest.raises(ReplisomeError):
+            c.get()
+        pytest.skip()
 
     tcur.execute("select * from testins")
     rs = tcur.fetchall()
@@ -197,7 +203,13 @@ def test_insert_conflict_do_nothing(src_db, tgt_db, called):
         "insert into testinsmini (id, other) values (1, 'foo')")
     scur.execute(
         "insert into testinsmini (data) values ('bar')")
-    c.get()
+
+    if tgt_db.conn.server_version >= 90500:
+        c.get()
+    else:
+        with pytest.raises(ReplisomeError):
+            c.get()
+        pytest.skip()
 
     tcur.execute("select * from testinsmini")
     rs = tcur.fetchall()

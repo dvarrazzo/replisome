@@ -186,6 +186,10 @@ class DataUpdater(object):
         idxs = [i for i, c in enumerate(msg_cols) if c in local_cols]
 
         if self.upsert:
+            if cnn.server_version < 90500:
+                raise ReplisomeError(
+                    "upsert is only available from PostgreSQL 9.5")
+
             key_cols = self.get_table_pkey(cnn, s, t)
             if key_cols is None:
                 logger.info("table %s.%s can't have upsert: no primary key")
