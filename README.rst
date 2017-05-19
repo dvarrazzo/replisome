@@ -145,7 +145,7 @@ The streaming connection should display a description of the operations
 performed::
 
     {
-        "change": [
+        "tx": [
             {
                 "op": "I",
                 "schema": "public",
@@ -157,7 +157,7 @@ performed::
         ]
     }
     {
-        "change": [
+        "tx": [
             {
                 "op": "I",
                 "schema": "public",
@@ -167,7 +167,7 @@ performed::
         ]
     }
     {
-        "change": [
+        "tx": [
             {
                 "op": "U",
                 "schema": "public",
@@ -240,7 +240,7 @@ to the START_REPLICATION__ command (e.g. using the ``-o`` option of
 
         {
             "xid": 5360,
-            "change": [
+            "tx": [
                 {   ...
 
 ``include-lsn`` [``bool``] (default: ``false``)
@@ -248,7 +248,7 @@ to the START_REPLICATION__ command (e.g. using the ``-o`` option of
 
         {
             "nextlsn": "0/3784C40",
-            "change": [
+            "tx": [
                 {   ...
 
 
@@ -257,7 +257,7 @@ to the START_REPLICATION__ command (e.g. using the ``-o`` option of
 
         {
             "timestamp": "2017-05-13 03:19:29.828474+01",
-            "change": [
+            "tx": [
                 {   ...
 
 ``include-schemas`` [``bool``] (default: ``true``)

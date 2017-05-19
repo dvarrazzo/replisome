@@ -30,7 +30,7 @@ SELECT data FROM slot_get(
 	'include', '{"table": "t1"}', 'include', '{"table": "t3"}');
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -42,7 +42,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -54,7 +54,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "U",
 			"schema": "public",
@@ -67,7 +67,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "U",
 			"schema": "public",
@@ -80,7 +80,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "D",
 			"schema": "public",
@@ -90,7 +90,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "D",
 			"schema": "public",
@@ -108,7 +108,7 @@ SELECT data FROM slot_get(
 	'include', '{"tables": "t"}');
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -120,7 +120,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -139,7 +139,7 @@ SELECT data FROM slot_get(
 	'include', '{"tables": "^.1$"}');
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -151,7 +151,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -172,7 +172,7 @@ SELECT data FROM slot_get(
 	'include', '{"tables": "^t"}', 'exclude', '{"table": "t2"}');
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -184,7 +184,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -204,7 +204,7 @@ SELECT data FROM slot_get(
 	'exclude', '{"table": "t2"}');
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -216,7 +216,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -237,7 +237,7 @@ SELECT data FROM slot_get(
 	'exclude', '{"tables": ".1"}');
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -249,7 +249,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -270,7 +270,7 @@ SELECT data FROM slot_get(
 	'exclude', '{"tables": "t"}', 'include', '{"tables": ".2"}');
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -282,7 +282,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -309,7 +309,7 @@ SELECT data FROM slot_peek(
 	'include', '{"table": "tc1", "columns": ["id", "bar", "qux"]}');
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -327,7 +327,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "U",
 			"schema": "public",
@@ -340,7 +340,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "D",
 			"schema": "public",
@@ -354,7 +354,7 @@ SELECT data FROM slot_get(
 	'include', '{"table": "tc1", "skip_columns": ["bar", "qux"]}');
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -372,7 +372,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "U",
 			"schema": "public",
@@ -385,7 +385,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "D",
 			"schema": "public",
@@ -402,7 +402,7 @@ SELECT data FROM slot_peek(
 	'include', '{"tables": "^tc", "columns": ["id", "foo"]}');
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -414,7 +414,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -431,7 +431,7 @@ SELECT data FROM slot_get(
 	'include', '{"table": "tc1", "columns": ["id", "bar"]}');
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -443,7 +443,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -464,7 +464,7 @@ SELECT data FROM slot_get(
 	'include', '{"table": "tc1", "columns": ["id", "foo", "qux"]}');
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -476,7 +476,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",

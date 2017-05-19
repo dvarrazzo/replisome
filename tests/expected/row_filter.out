@@ -39,7 +39,7 @@ SELECT data FROM slot_peek(
 	'include', '{"table": "rf1", "where": "id % 2 = 1"}');
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -51,7 +51,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -65,7 +65,7 @@ SELECT data FROM slot_peek(
 	'include', '{"table": "rf1", "where": "d is not null"}');
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -77,7 +77,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -92,7 +92,7 @@ SELECT data FROM slot_peek(
 	'{"table": "rf1", "where": "date_trunc(''month'', d) > ''2017-01-15''::date"}');
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -108,7 +108,7 @@ SELECT data FROM slot_peek(
 	'include', '{"table": "rf1", "where": "data ~ ''^ba.''"}');
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -120,7 +120,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",

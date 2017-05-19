@@ -28,7 +28,7 @@ insert into s3.t values (3, 's3.t');
 select data from slot_peek('include', '{"table": "t"}');
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "s1",
@@ -40,7 +40,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "s2",
@@ -52,7 +52,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "s3",
@@ -67,7 +67,7 @@ data
 select data from slot_peek('include', '{"schema": "s1"}');
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "s1",
@@ -79,7 +79,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "s1",
@@ -94,7 +94,7 @@ data
 select data from slot_peek('include', '{"schemas": "s[23]"}');
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "s2",
@@ -106,7 +106,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "s2",
@@ -118,7 +118,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "s3",
@@ -133,7 +133,7 @@ data
 select data from slot_peek('include', '{"schema": "s1", "table": "u"}');
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "s1",
@@ -148,7 +148,7 @@ data
 select data from slot_peek('exclude', '{"schema": "s1"}');
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "s2",
@@ -160,7 +160,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "s2",
@@ -172,7 +172,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "s3",
@@ -187,7 +187,7 @@ data
 select data from slot_peek('exclude', '{"schemas": "s[23]"}');
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "s1",
@@ -199,7 +199,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "s1",
@@ -214,7 +214,7 @@ data
 select data from slot_peek('exclude', '{"schemas": "s."}', 'include', '{"table": "u"}');
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "s1",
@@ -226,7 +226,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "s2",

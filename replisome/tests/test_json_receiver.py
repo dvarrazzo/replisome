@@ -24,8 +24,8 @@ def test_insert(src_db):
     cur.execute("insert into somedata default values")
 
     d = r.received.get(timeout=1)
-    assert len(d['change']) == 1
-    c = d['change'][0]
+    assert len(d['tx']) == 1
+    c = d['tx'][0]
     assert c['table'] == 'somedata'
     assert c['schema'] == 'public'
     assert c['colnames'] == 'id data float numeric dt'.split()
@@ -39,8 +39,8 @@ def test_insert(src_db):
         (default, 'hello world', 3.14, 1.01, '2017-01-01')""")
 
     d = r.received.get(timeout=1)
-    assert len(d['change']) == 1
-    c = d['change'][0]
+    assert len(d['tx']) == 1
+    c = d['tx'][0]
     assert c['table'] == 'somedata'
     assert c['schema'] == 'public'
     assert 'colnames' not in c
@@ -56,8 +56,8 @@ def test_insert(src_db):
     cur.execute("commit")
 
     d = r.received.get(timeout=1)
-    assert len(d['change']) == 3
-    for i, c in enumerate(d['change']):
+    assert len(d['tx']) == 3
+    for i, c in enumerate(d['tx']):
         assert c['table'] == 'somedata'
         assert c['schema'] == 'public'
         assert c['values'][:2] == [3 + i, 't%d' % i]
@@ -69,8 +69,8 @@ def test_insert(src_db):
     cur.execute("insert into somedata default values")
 
     d = r.received.get(timeout=1)
-    assert len(d['change']) == 1
-    c = d['change'][0]
+    assert len(d['tx']) == 1
+    c = d['tx'][0]
     assert c['table'] == 'somedata'
     assert c['schema'] == 'public'
     assert c['colnames'] == 'id data float numeric dt newcol'.split()
@@ -130,8 +130,8 @@ def test_break_half_message(src_db):
 
     d = r.received.get(timeout=1)
 
-    assert len(d['change']) == 1
-    c = d['change'][0]
+    assert len(d['tx']) == 1
+    c = d['tx'][0]
     assert c['table'] == 'somedata'
     assert c['schema'] == 'public'
     assert c['values'] == [1]

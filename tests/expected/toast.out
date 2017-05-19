@@ -32,7 +32,7 @@ WARNING:  column "toasted_col1" has an unchanged TOAST
 WARNING:  column "toasted_col2" has an unchanged TOAST
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -44,7 +44,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -54,7 +54,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "U",
 			"schema": "public",
@@ -67,7 +67,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "U",
 			"schema": "public",
@@ -78,7 +78,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "D",
 			"schema": "public",

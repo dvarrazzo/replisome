@@ -85,39 +85,39 @@ WARNING:  table "table_without_pk" without primary key or replica identity is no
 WARNING:  table "table_with_unique" without primary key or replica identity is nothing
 data
 {
-	"change": [
+	"tx": [
 	]
 }
 {
-	"change": [
+	"tx": [
 	]
 }
 {
-	"change": [
+	"tx": [
 	]
 }
 {
-	"change": [
+	"tx": [
 	]
 }
 {
-	"change": [
+	"tx": [
 	]
 }
 {
-	"change": [
+	"tx": [
 	]
 }
 {
-	"change": [
+	"tx": [
 	]
 }
 {
-	"change": [
+	"tx": [
 	]
 }
 {
-	"change": [
+	"tx": [
 	]
 }
 (9 rows)

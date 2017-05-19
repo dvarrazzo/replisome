@@ -93,7 +93,7 @@ class DataUpdater(object):
         """
         cnn = self.get_connection()
         try:
-            for ch in msg['change']:
+            for ch in msg['tx']:
                 self.process_change(cnn, ch)
 
             cnn.commit()

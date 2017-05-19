@@ -19,7 +19,7 @@ COMMIT;
 SELECT data FROM slot_get();
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",

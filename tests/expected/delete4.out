@@ -37,7 +37,7 @@ ALTER TABLE table_with_unique REPLICA IDENTITY DEFAULT;
 SELECT data FROM slot_get();
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "D",
 			"schema": "public",
@@ -49,7 +49,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "D",
 			"schema": "public",

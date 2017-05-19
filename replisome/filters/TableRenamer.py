@@ -35,7 +35,7 @@ class TableRenamer(object):
         return self.process_message(msg)
 
     def process_message(self, msg):
-        for ch in msg['change']:
+        for ch in msg['tx']:
             if self.from_table is not None:
                 if self.from_table != ch['table']:
                     continue

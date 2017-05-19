@@ -39,14 +39,14 @@ CREATE TABLE x ();
 DROP TABLE x;
 SELECT data FROM slot_peek('include-empty-xacts', '1', 'pretty-print', '0');
 data
-{"change":[]}
-{"change":[]}
+{"tx":[]}
+{"tx":[]}
 (2 rows)
 SELECT data FROM slot_get('write-in-chunks', 't', 'include-empty-xacts', '1', 'pretty-print', '0');
 data
-{"change":[
+{"tx":[
 ]}
-{"change":[
+{"tx":[
 ]}
 (4 rows)
 -- By default don't write xids
@@ -73,7 +73,7 @@ INSERT INTO emptyxact values (1);
 DROP TABLE emptyxact;
 SELECT data FROM slot_get('pretty-print', '0');
 data
-{"change":[{"op":"I","schema":"public","table":"emptyxact","colnames":["id"],"coltypes":["int4"],"values":[1]}]}
+{"tx":[{"op":"I","schema":"public","table":"emptyxact","colnames":["id"],"coltypes":["int4"],"values":[1]}]}
 (1 row)
 SELECT slot_drop();
 slot_drop

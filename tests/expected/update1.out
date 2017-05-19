@@ -82,11 +82,11 @@ WARNING:  table "table_without_pk" without primary key or replica identity is no
 WARNING:  table "table_with_unique" without primary key or replica identity is nothing
 data
 {
-	"change": [
+	"tx": [
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "U",
 			"schema": "public",
@@ -101,7 +101,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "U",
 			"schema": "public",
@@ -112,7 +112,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 	]
 }
 (4 rows)

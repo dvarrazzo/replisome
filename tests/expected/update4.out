@@ -38,11 +38,11 @@ ALTER TABLE table_with_unique REPLICA IDENTITY DEFAULT;
 SELECT data FROM slot_get('include-empty-xacts', '1');
 data
 {
-	"change": [
+	"tx": [
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "U",
 			"schema": "public",
@@ -57,7 +57,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "U",
 			"schema": "public",
@@ -68,7 +68,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 	]
 }
 (4 rows)

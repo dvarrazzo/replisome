@@ -316,9 +316,9 @@ output_begin(LogicalDecodingContext *ctx, JsonDecodingData *data,
 	}
 
 	if (data->pretty_print)
-		appendStringInfoString(ctx->out, "\t\"change\": [");
+		appendStringInfoString(ctx->out, "\t\"tx\": [");
 	else
-		appendStringInfoString(ctx->out, "\"change\":[");
+		appendStringInfoString(ctx->out, "\"tx\":[");
 
 	if (data->write_in_chunks)
 		OutputPluginWrite(ctx, last_write);

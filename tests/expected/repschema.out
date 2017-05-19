@@ -35,7 +35,7 @@ delete from table_with_pk where i = 1;
 SELECT data FROM slot_get();
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -47,7 +47,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -57,7 +57,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "U",
 			"schema": "public",
@@ -70,7 +70,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "U",
 			"schema": "public",
@@ -81,7 +81,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "D",
 			"schema": "public",
@@ -100,7 +100,7 @@ delete from table_with_pk where i = 3;
 SELECT data FROM slot_get();
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -112,7 +112,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -122,7 +122,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "U",
 			"schema": "public",
@@ -135,7 +135,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "U",
 			"schema": "public",
@@ -146,7 +146,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "D",
 			"schema": "public",
@@ -163,7 +163,7 @@ insert into table_with_pk values (6, 'a', 'b', 'c');
 SELECT data FROM slot_get();
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -175,7 +175,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -194,7 +194,7 @@ insert into table_with_pk values (10, 'a', 'b', 'c', 'd');
 SELECT data FROM slot_get();
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -206,7 +206,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -216,7 +216,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -228,7 +228,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -249,7 +249,7 @@ commit;
 SELECT data FROM slot_get();
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -295,7 +295,7 @@ commit;
 SELECT data FROM slot_get();
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -357,7 +357,7 @@ WARNING:  table "table_without_pk" without primary key or replica identity is no
 WARNING:  table "table_without_pk" without primary key or replica identity is nothing
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -369,7 +369,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -390,7 +390,7 @@ delete from table_without_pk where i = 3;
 SELECT data FROM slot_get();
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -402,7 +402,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -412,7 +412,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "U",
 			"schema": "public",
@@ -425,7 +425,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "U",
 			"schema": "public",
@@ -436,7 +436,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "D",
 			"schema": "public",
@@ -453,7 +453,7 @@ insert into table_without_pk values (6, 'a', 'b', 'c');
 SELECT data FROM slot_get();
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -465,7 +465,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -484,7 +484,7 @@ insert into table_without_pk values (10, 'a', 'b', 'c', 'd');
 SELECT data FROM slot_get();
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -496,7 +496,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -506,7 +506,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -518,7 +518,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -539,7 +539,7 @@ commit;
 SELECT data FROM slot_get();
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",

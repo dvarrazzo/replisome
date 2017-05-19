@@ -23,7 +23,7 @@ SELECT data FROM slot_get();
 WARNING:  column "bincol" has an unchanged TOAST
 data
 {
-	"change": [
+	"tx": [
 		{
 			"op": "I",
 			"schema": "public",
@@ -35,7 +35,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "U",
 			"schema": "public",
@@ -48,7 +48,7 @@ data
 	]
 }
 {
-	"change": [
+	"tx": [
 		{
 			"op": "D",
 			"schema": "public",
