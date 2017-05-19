@@ -26,7 +26,8 @@ def tupgetter(*idxs):
 
 
 class DataUpdater(object):
-    def __init__(self, dsn, upsert=False, skip_missing_columns=False):
+    def __init__(self, dsn, upsert=False,
+                 skip_missing_columns=False, skip_missing_tables=False):
         """
         Apply changes to a database receiving message from a replisome stream.
 
@@ -35,10 +36,13 @@ class DataUpdater(object):
         :arg skip_missing_columns: If true drop the values in the messages
             for columns not available locally; otherwise fail if such columns
             are found.
+        :arg skip_missing_columns: If true records on non existing tables are
+            dropped.
         """
         self.dsn = dsn
         self.upsert = upsert
         self.skip_missing_columns = skip_missing_columns
+        self.skip_missing_tables = skip_missing_tables
         self._connection = None
 
         # Maps from the key() of the message to the columns and table key names
@@ -163,7 +167,11 @@ class DataUpdater(object):
         t = msg['table']
         local_cols = self.get_table_columns(cnn, s, t)
         if local_cols is None:
-            logger.info("table %s.%s not available", s, t)
+            if not self.skip_missing_tables:
+                raise ReplisomeError(
+                    "received insert on table %s.%s not available" % (s, t))
+
+            logger.info("received insert on table %s.%s not available", s, t)
             return None, None
 
         local_cols = set(local_cols)
@@ -241,7 +249,11 @@ class DataUpdater(object):
         t = msg['table']
         local_cols = self.get_table_columns(cnn, s, t)
         if local_cols is None:
-            logger.debug("table %s.%s not available", s, t)
+            if not self.skip_missing_tables:
+                raise ReplisomeError(
+                    "received update on table %s.%s not available" % (s, t))
+
+            logger.debug("received update on table %s.%s not available", s, t)
             return None, None
 
         local_cols = set(local_cols)
@@ -313,7 +325,11 @@ class DataUpdater(object):
         t = msg['table']
         local_cols = self.get_table_columns(cnn, s, t)
         if local_cols is None:
-            logger.debug("table %s.%s not available", s, t)
+            if not self.skip_missing_tables:
+                raise ReplisomeError(
+                    "received delete on table %s.%s not available" % (s, t))
+
+            logger.debug("received delete on table %s.%s not available", s, t)
             return None, None
 
         local_cols = set(local_cols)

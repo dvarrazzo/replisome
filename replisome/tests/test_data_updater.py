@@ -6,7 +6,8 @@ from replisome.receivers.JsonReceiver import JsonReceiver
 
 
 def test_insert(src_db, tgt_db, called):
-    du = DataUpdater(tgt_db.conn.dsn, skip_missing_columns=True)
+    du = DataUpdater(tgt_db.conn.dsn, skip_missing_columns=True,
+                     skip_missing_tables=True)
     c = called(du, 'process_message')
 
     jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)
@@ -66,6 +67,40 @@ def test_insert(src_db, tgt_db, called):
 
     tcur.execute("select max(id) from testins")
     assert tcur.fetchone()[0] == 4
+
+
+def test_insert_missing_table(src_db, tgt_db, called):
+    du = DataUpdater(tgt_db.conn.dsn, skip_missing_columns=True)
+    c = called(du, 'process_message')
+
+    rconn = src_db.make_repl_conn()
+    jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)
+    src_db.thread_receive(jr, rconn)
+
+    scur = src_db.conn.cursor()
+    tcur = tgt_db.conn.cursor()
+
+    scur.execute("drop table if exists testins")
+    scur.execute(
+        "create table testins (id serial primary key, data text)")
+
+    tcur.execute("drop table if exists testins")
+
+    scur.execute("insert into testins (data) values ('hello')")
+    with pytest.raises(ReplisomeError):
+        c.get()
+
+    jr.stop()
+    rconn.close()
+
+    tcur.execute("create table testins (id serial primary key, data text)")
+
+    jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)
+    src_db.thread_receive(jr, src_db.make_repl_conn())
+    c.get()
+
+    tcur.execute("select * from testins")
+    assert tcur.fetchall() == [(1, 'hello')]
 
 
 def test_insert_missing_col(src_db, tgt_db, called):
@@ -171,7 +206,8 @@ def test_insert_conflict_do_nothing(src_db, tgt_db, called):
 
 
 def test_update(src_db, tgt_db, called):
-    du = DataUpdater(tgt_db.conn.dsn, skip_missing_columns=True)
+    du = DataUpdater(tgt_db.conn.dsn, skip_missing_columns=True,
+                    skip_missing_tables=True)
     c = called(du, 'process_message')
 
     jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)
@@ -228,6 +264,47 @@ def test_update(src_db, tgt_db, called):
     assert tcur.fetchone()[0] == 3
 
 
+def test_update_missing_table(src_db, tgt_db, called):
+    du = DataUpdater(tgt_db.conn.dsn, skip_missing_columns=True)
+    c = called(du, 'process_message')
+
+    rconn = src_db.make_repl_conn()
+    jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)
+    src_db.thread_receive(jr, rconn)
+
+    scur = src_db.conn.cursor()
+    tcur = tgt_db.conn.cursor()
+
+    scur.execute("drop table if exists testins")
+    scur.execute("drop table if exists testins2")
+    scur.execute(
+        "create table testins (id serial primary key, data text)")
+
+    tcur.execute("drop table if exists testins")
+    tcur.execute("drop table if exists testins2")
+    tcur.execute("create table testins (id serial primary key, data text)")
+
+    scur.execute("insert into testins (data) values ('hello')")
+    c.get()
+    scur.execute("alter table testins rename to testins2")
+    scur.execute("update testins2 set data = 'world' where id = 1")
+
+    with pytest.raises(ReplisomeError):
+        c.get()
+
+    jr.stop()
+    rconn.close()
+
+    tcur.execute("alter table testins rename to testins2")
+
+    jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)
+    src_db.thread_receive(jr, src_db.make_repl_conn())
+    c.get()
+
+    tcur.execute("select * from testins2")
+    assert tcur.fetchall() == [(1, 'world')]
+
+
 def test_update_missing_col(src_db, tgt_db, called):
     du = DataUpdater(tgt_db.conn.dsn)
     c = called(du, 'process_message')
@@ -281,7 +358,8 @@ def test_update_missing_col(src_db, tgt_db, called):
 
 
 def test_delete(src_db, tgt_db, called):
-    du = DataUpdater(tgt_db.conn.dsn, skip_missing_columns=True)
+    du = DataUpdater(tgt_db.conn.dsn, skip_missing_columns=True,
+                    skip_missing_tables=True)
     c = called(du, 'process_message')
 
     jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)
@@ -324,3 +402,45 @@ def test_delete(src_db, tgt_db, called):
 
     tcur.execute("select id from testdel where id = 4")
     assert tcur.fetchone()[0] == 4
+
+
+def test_delete_missing_table(src_db, tgt_db, called):
+    du = DataUpdater(tgt_db.conn.dsn, skip_missing_columns=True)
+    c = called(du, 'process_message')
+
+    rconn = src_db.make_repl_conn()
+    jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)
+    src_db.thread_receive(jr, rconn)
+
+    scur = src_db.conn.cursor()
+    tcur = tgt_db.conn.cursor()
+
+    scur.execute("drop table if exists testins")
+    scur.execute("drop table if exists testins2")
+    scur.execute(
+        "create table testins (id serial primary key, data text)")
+
+    tcur.execute("drop table if exists testins")
+    tcur.execute("drop table if exists testins2")
+    tcur.execute("create table testins (id serial primary key, data text)")
+
+    scur.execute("insert into testins (data) values ('hello'), ('world')")
+    c.get()
+
+    scur.execute("alter table testins rename to testins2")
+    scur.execute("delete from testins2 where id = 1")
+
+    with pytest.raises(ReplisomeError):
+        c.get()
+
+    jr.stop()
+    rconn.close()
+
+    tcur.execute("alter table testins rename to testins2")
+
+    jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)
+    src_db.thread_receive(jr, src_db.make_repl_conn())
+    c.get()
+
+    tcur.execute("select * from testins2")
+    assert tcur.fetchall() == [(2, 'world')]
