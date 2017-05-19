@@ -10,6 +10,9 @@ logger = logging.getLogger('replisome.DataUpdater')
 
 def tupgetter(*idxs):
     """Like itemgetter, but return a 1-tuple if the input is one index."""
+    if len(idxs) == 0:
+        return tuple
+
     if len(idxs) == 1:
         def tupgetter_(obj, _idx=idxs[0]):
             return (obj[_idx],)
@@ -21,11 +24,15 @@ def tupgetter(*idxs):
 
 
 class DataUpdater(object):
-    def __init__(self, dsn):
+    def __init__(self, dsn, upsert=False):
         """
         Apply changes to a database receiving message from a replisome stream.
+
+        If upsert is true update instead (only on primary key, TODO on other
+        fields)
         """
         self.dsn = dsn
+        self.upsert = upsert
         self._connection = None
 
         # Maps from the key() of the message to the columns and table key names
@@ -150,34 +157,36 @@ class DataUpdater(object):
         t = msg['table']
         local_cols = self.get_table_columns(cnn, s, t)
         if local_cols is None:
-            logger.debug("table %s.%s not available", s, t)
+            logger.info("table %s.%s not available", s, t)
             return None, None
 
         local_cols = set(local_cols)
         msg_cols = self._colnames[self.key(msg)]
         idxs = [i for i, c in enumerate(msg_cols) if c in local_cols]
+
+        if self.upsert:
+            key_cols = self.get_table_pkey(cnn, s, t)
+            if key_cols is None:
+                logger.info("table %s.%s can't have upsert: no primary key")
+                return None, None
+
+            nokeyidxs = [i for i, c in enumerate(msg_cols)
+                        if c in local_cols and c not in key_cols]
+        else:
+            nokeyidxs = None
+
         if not idxs:
-            logger.debug(
+            logger.info(
                 "the local table has no field in common with the message")
             return None, None
 
-        elif len(idxs) == len(msg_cols):
-            logger.debug(
-                "the local table has exactly the same fields of the message")
+        logger.debug(
+            "the local table has %d field in common with the message",
+            len(idxs))
+        colmap = tupgetter(*idxs)
 
-            def colmap(values):
-                return values
-
-            acc = itemgetter('values')
-
-        else:
-            logger.debug(
-                "the local table has %d field in common with the message",
-                len(idxs))
-            colmap = tupgetter(*idxs)
-
-            def acc(msg, colmap=colmap):
-                return colmap(msg['values'])
+        def acc(msg, _map=tupgetter(*(idxs + (nokeyidxs or [])))):
+            return _map(msg['values'])
 
         cols = colmap(msg_cols)
 
@@ -191,6 +200,20 @@ class DataUpdater(object):
         bits.append(sql.SQL(') values ('))
         bits.append(sql.SQL(',').join(sql.Placeholder() * len(cols)))
         bits.append(sql.SQL(')'))
+
+        if self.upsert:
+            bits.append(sql.SQL(' on conflict ('))
+            bits.append(sql.SQL(',').join(map(sql.Identifier, key_cols)))
+            if nokeyidxs:
+                bits.append(sql.SQL(') do update set ('))
+                bits.append(sql.SQL(',').join(map(
+                    sql.Identifier, tupgetter(*nokeyidxs)(msg_cols))))
+                bits.append(sql.SQL(') = ('))
+                bits.append(sql.SQL(',').join(sql.Placeholder() * len(nokeyidxs)))
+                bits.append(sql.SQL(')'))
+            else:
+                bits.append(sql.SQL(') do nothing'))
+
         stmt = sql.Composed(bits).as_string(cnn)
 
         logger.debug("generated query: %s", stmt)
@@ -224,7 +247,7 @@ class DataUpdater(object):
 
         idxs = [i for i, c in enumerate(msg_cols) if c in local_cols]
         if not idxs:
-            logger.debug(
+            logger.info(
                 "the local table has no field in common with the message")
             return None, None
 
@@ -338,6 +361,44 @@ class DataUpdater(object):
                         join pg_namespace s on s.oid = relnamespace
                         where relname = %(table)s and nspname = %(schema)s
                         and relkind = 'r' limit 1)
+                    and attnum > 0 and not attisdropped
+                    order by attnum) x
+                """
+        cur = cnn.cursor()
+        cur.execute(sql, {'table': table, 'schema': schema})
+        return cur.fetchone()[0]
+
+    def get_table_pkey(self, cnn, schema, table):
+        """
+        Return the list of column names in a table's primary key, optionally
+        schema-qualified
+
+        Return null if the table is not found.
+        """
+        if schema is None:
+            sql = """
+                select array_agg(attname)
+                from (
+                    select attname from pg_attribute
+                    where attrelid = (
+                        select c.conindid from pg_class r
+                        join pg_constraint c on conrelid = r.oid
+                        where r.relname = %(table)s
+                        and r.relkind = 'r' and contype = 'p' limit 1)
+                    and attnum > 0 and not attisdropped
+                    order by attnum) x
+                """
+        else:
+            sql = """
+                select array_agg(attname)
+                from (
+                    select attname from pg_attribute
+                    where attrelid = (
+                        select c.conindid from pg_class r
+                        join pg_constraint c on conrelid = r.oid
+                        join pg_namespace s on s.oid = r.relnamespace
+                        where r.relname = %(table)s and nspname = %(schema)s
+                        and r.relkind = 'r' and contype = 'p' limit 1)
                     and attnum > 0 and not attisdropped
                     order by attnum) x
                 """

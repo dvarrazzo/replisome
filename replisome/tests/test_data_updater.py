@@ -65,6 +65,36 @@ def test_insert(src_db, tgt_db, called):
     assert tcur.fetchone()[0] == 4
 
 
+def test_insert_conflict(src_db, tgt_db, called):
+    du = DataUpdater(tgt_db.conn.dsn, upsert=True)
+    c = called(du, 'process_message')
+
+    jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)
+    src_db.thread_receive(jr, src_db.make_repl_conn())
+
+    scur = src_db.conn.cursor()
+    tcur = tgt_db.conn.cursor()
+
+    scur.execute("drop table if exists testins")
+    scur.execute(
+        "create table testins (id serial primary key, data text, foo text, more text)")
+
+    tcur.execute("drop table if exists testins")
+    tcur.execute(
+        "create table testins ( id integer primary key, data text, foo text, n int)")
+
+    tcur.execute(
+        "insert into testins (id, data, foo, n) values (1, 'foo', 'ouch', 42)")
+    scur.execute(
+        "insert into testins (data, foo, more) values ('baz', 'qux', 'quux')")
+    c.get()
+
+    tcur.execute("select * from testins")
+    rs = tcur.fetchall()
+    assert len(rs) == 1
+    assert rs[0] == (1, 'baz', 'qux', 42)
+
+
 def test_update(src_db, tgt_db, called):
     du = DataUpdater(tgt_db.conn.dsn)
     c = called(du, 'process_message')

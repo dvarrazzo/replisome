@@ -116,8 +116,5 @@ def test_pipeline(configfile, src_db, tgt_db, called):
     tcur.execute("select id from otherapp.useless")
     assert tcur.fetchall() == []
 
-    tcur.execute("select username, password from otherapp.account order by 1")
-    assert tcur.fetchall() == [('acc1', None), ('acc2', None)]
-
     tcur.execute("select id, seller from otherapp.contract order by 1")
     assert tcur.fetchall() == [(1, 'alice'), (3, 'bob')]
