@@ -5,6 +5,8 @@ import pytest
 import psycopg2
 from psycopg2.extras import LogicalReplicationConnection, wait_select
 
+from replisome.errors import ReplisomeError
+
 
 @pytest.fixture
 def src_db():
@@ -153,8 +155,14 @@ class TestDatabase(object):
 
         Stop the receiver at the end of the test.
         """
+        def thread_receive_(cnn):
+            try:
+                (target or receiver.start)(cnn)
+            except ReplisomeError:
+                pass
+
         self.thread_run(
-            target=target or receiver.start, at_exit=receiver.stop,
+            target=thread_receive_, at_exit=receiver.stop,
             args=(connection,))
 
     def thread_run(self, target, at_exit=None, args=()):

@@ -29,6 +29,7 @@ consumer:
     class: DataUpdater
     options:
         dsn: %(tgt_dsn)s
+        skip_missing_columns: true
 """
 
 
@@ -79,6 +80,7 @@ def configfile(tmpdir, src_db, tgt_db):
 def test_pipeline(configfile, src_db, tgt_db, called):
     scur = src_db.conn.cursor()
     scur.execute(SRC_SCHEMA)
+    scur.execute("alter table myapp.account add foo text")
     tcur = tgt_db.conn.cursor()
     tcur.execute(SRC_SCHEMA.replace('myapp', 'otherapp'))
 

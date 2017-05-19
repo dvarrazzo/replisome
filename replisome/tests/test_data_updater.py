@@ -1,9 +1,12 @@
+import pytest
+
+from replisome.errors import ReplisomeError
 from replisome.consumers.DataUpdater import DataUpdater
 from replisome.receivers.JsonReceiver import JsonReceiver
 
 
 def test_insert(src_db, tgt_db, called):
-    du = DataUpdater(tgt_db.conn.dsn)
+    du = DataUpdater(tgt_db.conn.dsn, skip_missing_columns=True)
     c = called(du, 'process_message')
 
     jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)
@@ -65,8 +68,52 @@ def test_insert(src_db, tgt_db, called):
     assert tcur.fetchone()[0] == 4
 
 
+def test_insert_missing_col(src_db, tgt_db, called):
+    du = DataUpdater(tgt_db.conn.dsn)
+    c = called(du, 'process_message')
+
+    rconn = src_db.make_repl_conn()
+    jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)
+    src_db.thread_receive(jr, rconn)
+
+    scur = src_db.conn.cursor()
+    tcur = tgt_db.conn.cursor()
+
+    scur.execute("drop table if exists testins")
+    scur.execute(
+        "create table testins (id serial primary key, data text, more text)")
+
+    tcur.execute("drop table if exists testins")
+    tcur.execute("""
+        create table testins (
+            id integer primary key,
+            data text)
+        """)
+
+    scur.execute("insert into testins (data) values ('hello')")
+    with pytest.raises(ReplisomeError):
+        c.get()
+
+    tcur.execute("select * from testins")
+    assert tcur.fetchall() == []
+
+    jr.stop()
+    rconn.close()
+    tcur.execute("alter table testins add more text")
+
+    du = DataUpdater(tgt_db.conn.dsn)
+    c = called(du, 'process_message')
+
+    jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)
+    src_db.thread_receive(jr, src_db.make_repl_conn())
+
+    c.get()
+    tcur.execute("select * from testins")
+    assert tcur.fetchall() == [(1, 'hello', None)]
+
+
 def test_insert_conflict(src_db, tgt_db, called):
-    du = DataUpdater(tgt_db.conn.dsn, upsert=True)
+    du = DataUpdater(tgt_db.conn.dsn, upsert=True, skip_missing_columns=True)
     c = called(du, 'process_message')
 
     jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)
@@ -96,7 +143,7 @@ def test_insert_conflict(src_db, tgt_db, called):
 
 
 def test_insert_conflict_do_nothing(src_db, tgt_db, called):
-    du = DataUpdater(tgt_db.conn.dsn, upsert=True)
+    du = DataUpdater(tgt_db.conn.dsn, upsert=True, skip_missing_columns=True)
     c = called(du, 'process_message')
 
     jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)
@@ -124,7 +171,7 @@ def test_insert_conflict_do_nothing(src_db, tgt_db, called):
 
 
 def test_update(src_db, tgt_db, called):
-    du = DataUpdater(tgt_db.conn.dsn)
+    du = DataUpdater(tgt_db.conn.dsn, skip_missing_columns=True)
     c = called(du, 'process_message')
 
     jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)
@@ -181,8 +228,60 @@ def test_update(src_db, tgt_db, called):
     assert tcur.fetchone()[0] == 3
 
 
-def test_delete(src_db, tgt_db, called):
+def test_update_missing_col(src_db, tgt_db, called):
     du = DataUpdater(tgt_db.conn.dsn)
+    c = called(du, 'process_message')
+
+    rconn = src_db.make_repl_conn()
+    jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)
+    src_db.thread_receive(jr, rconn)
+
+    scur = src_db.conn.cursor()
+    tcur = tgt_db.conn.cursor()
+
+    scur.execute("drop table if exists testup")
+    scur.execute(
+        "create table testup (id serial primary key, data text)")
+
+    tcur.execute("drop table if exists testup")
+    tcur.execute("""
+        create table testup (
+            id integer primary key,
+            data text)
+        """)
+
+    scur.execute("insert into testup (data) values ('hello')")
+    scur.execute("insert into testup (data) values ('world')")
+
+    scur.execute("alter table testup add more text")
+    scur.execute("update testup set more = 'mama' where id = 2")
+
+    for i in range(2):
+        c.get()
+
+    with pytest.raises(ReplisomeError):
+        c.get()
+
+    tcur.execute("select id, data from testup order by id")
+    rs = tcur.fetchall()
+    assert rs == [(1, 'hello'), (2, 'world')]
+
+    jr.stop()
+    rconn.close()
+
+    tcur.execute("alter table testup add more text")
+
+    jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)
+    src_db.thread_receive(jr, src_db.make_repl_conn())
+    c.get()
+
+    tcur.execute("select id, data, more from testup order by id")
+    rs = tcur.fetchall()
+    assert rs == [(1, 'hello', None), (2, 'world', 'mama')]
+
+
+def test_delete(src_db, tgt_db, called):
+    du = DataUpdater(tgt_db.conn.dsn, skip_missing_columns=True)
     c = called(du, 'process_message')
 
     jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)

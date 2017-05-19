@@ -4,6 +4,8 @@ import psycopg2.extras
 from psycopg2 import extensions as ext
 from psycopg2 import sql
 
+from replisome.errors import ReplisomeError
+
 import logging
 logger = logging.getLogger('replisome.DataUpdater')
 
@@ -24,15 +26,19 @@ def tupgetter(*idxs):
 
 
 class DataUpdater(object):
-    def __init__(self, dsn, upsert=False):
+    def __init__(self, dsn, upsert=False, skip_missing_columns=False):
         """
         Apply changes to a database receiving message from a replisome stream.
 
-        If upsert is true update instead (only on primary key, TODO on other
-        fields)
+        :arg upsert: If true update instead (only on primary key, TODO on other
+             fields)
+        :arg skip_missing_columns: If true drop the values in the messages
+            for columns not available locally; otherwise fail if such columns
+            are found.
         """
         self.dsn = dsn
         self.upsert = upsert
+        self.skip_missing_columns = skip_missing_columns
         self._connection = None
 
         # Maps from the key() of the message to the columns and table key names
@@ -162,6 +168,13 @@ class DataUpdater(object):
 
         local_cols = set(local_cols)
         msg_cols = self._colnames[self.key(msg)]
+        if not self.skip_missing_columns:
+            missing = set(msg_cols) - local_cols
+            if missing:
+                raise ReplisomeError(
+                    "insert message on table %s.%s has columns not available "
+                    "locally: %s" % (s, t, ', '.join(sorted(missing))))
+
         idxs = [i for i, c in enumerate(msg_cols) if c in local_cols]
 
         if self.upsert:
@@ -235,13 +248,20 @@ class DataUpdater(object):
         msg_cols = self._colnames[self.key(msg)]
         msg_keys = self._keynames[self.key(msg)]
 
+        if not self.skip_missing_columns:
+            missing = set(msg_cols) - local_cols
+            if missing:
+                raise ReplisomeError(
+                    "update message on table %s.%s has columns not available "
+                    "locally: %s" % (s, t, ', '.join(sorted(missing))))
+
         # the key must be entirely known
         kidxs = [i for i, c in enumerate(msg_keys) if c in local_cols]
         if not(kidxs):
-            raise ValueError("the table %s.%s has no key" % (s, t))
+            raise ReplisomeError("the table %s.%s has no key" % (s, t))
 
         if len(kidxs) != len(msg_keys):
-            raise ValueError(
+            raise ReplisomeError(
                 "the local table %s.%s is missing some key fields %s" %
                 (s, t, msg_keys))
 
@@ -302,10 +322,10 @@ class DataUpdater(object):
         # the key must be entirely known
         kidxs = [i for i, c in enumerate(msg_keys) if c in local_cols]
         if not(kidxs):
-            raise ValueError("the table %s.%s has no key" % (s, t))
+            raise ReplisomeError("the table %s.%s has no key" % (s, t))
 
         if len(kidxs) != len(msg_keys):
-            raise ValueError(
+            raise ReplisomeError(
                 "the local table %s.%s is missing some key fields %s" %
                 (s, t, msg_keys))
 

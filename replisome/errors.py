@@ -1,6 +1,8 @@
 class ReplisomeError(Exception):
-	pass
+    """Control exceptions: to exit politely"""
+    pass
 
 
 class ConfigError(ReplisomeError):
-	pass
+    """Error in some configuration entry"""
+    pass

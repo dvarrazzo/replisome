@@ -31,25 +31,30 @@ class Called(object):
         self.request = request
         self._queue = Queue()
 
-        logger.info("instrumenting method %s of %s", self.attr, self.obj)
         self.orig = getattr(self.obj, self.attr)
         setattr(self.obj, self.attr, self._call)
 
     def restore(self):
         if hasattr(self, 'orig'):
-            logger.info("restoring method %s of %s", self.attr, self.obj)
             setattr(self.obj, self.attr, self.orig)
 
     def _call(self, *args, **kwargs):
-        logger.info("calling method %s of %s", self.attr, self.obj)
-        rv = self.orig(*args, **kwargs)
-        logger.info("called method %s of %s", self.attr, self.obj)
-        self._queue.put((args, kwargs, rv))
+        try:
+            rv = self.orig(*args, **kwargs)
+        except Exception as e:
+            self._queue.put((args, kwargs, e))
+            raise
+        else:
+            self._queue.put((args, kwargs, rv))
+
         return rv
 
     def get(self, timeout=1):
         assert timeout
         try:
-            return self._queue.get(timeout=timeout)
+            rv = self._queue.get(timeout=timeout)
         except Empty:
             pytest.fail("no item received within %s seconds" % timeout)
+
+        if isinstance(rv[2], Exception):
+            raise rv[2]
