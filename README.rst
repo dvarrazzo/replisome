@@ -43,7 +43,7 @@ Build and Install
 This thing will be packaged as an extension, have a version number, be
 released on PGXN... but currently it is only available on github::
 
-    $ git clone https://github.com/dvarrazzo/wal2json.git -b replisome replisome
+    $ git clone https://github.com/GambitResearch/replisome.git
 
 
 Unix based Operating Systems
@@ -57,7 +57,7 @@ In order to build the extension you will need a C compiler, the PostgreSQL
 server development packages and maybe something else that google will friendly
 tell you. ::
 
-    $ git clone https://github.com/dvarrazzo/wal2json.git -b replisome replisome
+    $ git clone https://github.com/GambitResearch/replisome.git
     $ cd replisome
     $ export PATH=
     $ make PG_CONFIG=/path/to/bin/pg_config

@@ -19,7 +19,7 @@ setup(
     long_description='\n'.join(readme[2:]).lstrip(),
     author='Daniele Varrazzo',
     author_email='daniele.varrazzo@gmail.com',
-    url='https://github.com/dvarrazzo/wal2json/tree/replisome',
+	url='https://github.com/GambitResearch/replisome',
     keywords=['database', 'replication', 'PostgreSQL'],
     classifiers=[x for x in classifiers.strip().splitlines()],
     install_requires=['PyYAML', 'psycopg2>=2.7'],
