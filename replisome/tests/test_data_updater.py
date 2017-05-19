@@ -95,6 +95,34 @@ def test_insert_conflict(src_db, tgt_db, called):
     assert rs[0] == (1, 'baz', 'qux', 42)
 
 
+def test_insert_conflict_do_nothing(src_db, tgt_db, called):
+    du = DataUpdater(tgt_db.conn.dsn, upsert=True)
+    c = called(du, 'process_message')
+
+    jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)
+    src_db.thread_receive(jr, src_db.make_repl_conn())
+
+    scur = src_db.conn.cursor()
+    tcur = tgt_db.conn.cursor()
+
+    scur.execute("drop table if exists testinsmini")
+    scur.execute("create table testinsmini (id serial primary key, data text)")
+
+    tcur.execute("drop table if exists testinsmini")
+    tcur.execute("create table testinsmini (id serial primary key, other text)")
+
+    tcur.execute(
+        "insert into testinsmini (id, other) values (1, 'foo')")
+    scur.execute(
+        "insert into testinsmini (data) values ('bar')")
+    c.get()
+
+    tcur.execute("select * from testinsmini")
+    rs = tcur.fetchall()
+    assert len(rs) == 1
+    assert rs[0] == (1, 'foo')
+
+
 def test_update(src_db, tgt_db, called):
     du = DataUpdater(tgt_db.conn.dsn)
     c = called(du, 'process_message')
