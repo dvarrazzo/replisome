@@ -7,7 +7,14 @@ logger = logging.getLogger('replisome.tests.Called')
 
 @pytest.fixture
 def called():
-    """Attach a queue to a callable to check if it is called asynchronously."""
+    """Attach a queue to a callable to check if it was called asynchronously.
+
+    Use c = called(object, method_name) to intercept calls to object.method().
+    Use c.get() to return the arguments passed to object.method() and the
+    return value (it returns a tuple (args, kwargs, rv).  If the method raised
+    an exception, c.get() will reraise it. If the method wasn't called c.get()
+    will make the test fail.
+    """
     cf = CalledFactory()
     yield cf
     for c in cf.called:
