@@ -462,18 +462,16 @@ values_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple t
 		if (isnull && replident)
 			continue;
 
-		/* Unchanged TOAST Datum may not be available */
-		if (!isnull && typisvarlena && VARATT_IS_EXTERNAL_ONDISK(origval))
-		{
-			appendStringInfo(ctx->out, "%s{}", comma);
-			continue;
-		}
-
 		/* Accumulate each column info */
 
 		if (isnull)
 		{
 			appendStringInfo(ctx->out, "%snull", comma);
+		}
+        else if (typisvarlena && VARATT_IS_EXTERNAL_ONDISK(origval))
+		{
+            /* Unchanged TOAST Datum may not be available */
+			appendStringInfo(ctx->out, "%s{}", comma);
 		}
 		else
 		{
