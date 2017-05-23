@@ -1,53 +1,106 @@
+==========================================
 replisome - handsomely replicate something
 ==========================================
 
 The project is currently in pre-production phase. We are hacking on it.
 
-**replisome** is an output plugin for `PostgreSQL logical decoding`__ Using
-the plugin a client can receive a stream of changes describing the data
-manipulation inside the database (INSERT, UPDATE, DELETE of records) for all
-or a specified subset of tables, with the possibility of limiting the columns
-and rows received. Changes are received in JSON format.
+**replisome** is a *lightweight*, *flexible*, *easy to configure* system to
+export data changes from PostgreSQL.  It allows a client to receive a stream
+of changes describing the data manipulation inside the database (INSERT,
+UPDATE, DELETE of records) in JSON format, for all or a specified subset of
+tables, with the possibility of limiting the columns and rows received.
 
-.. __: https://www.postgresql.org/docs/current/static/logicaldecoding-explanation.html
+.. contents:: Table of Contents
 
-**replisome** doesn't try to be a complete replication solution: take a look
-at pglogical_ for that.  Things you can do with it:
+What can you do with data changes?
 
-* receive data from the database in a readable way, not for replication (e.g.
-  for logging, message passing to different systems...)
-* integrate data update from a database into a receiving database with an
-  arbitrary different schemas.
+- *Replication*: you can apply the changes to another database and obtain a
+  copy of the data.
+- *Upgrade*, *downgrade*: the database you are applying changes could be a
+  different version.
+- *Export*: the database you are applying changes could be something else than
+  PostgreSQL (this is more a theoretical possibility than else, as nobody sane
+  would use a different database...)
+- *Integrate*: the thing you are applying the changes could be *redis*,
+  *memcached* or some other key-value store granting fast access to data.
+- *Audit*, *logging*: would you like to write all the changes into a file?
+- *Email*, *twitter*: just in case you want to make things happen when a
+  certain record is created.
+- *Etcetera*. You have a stream of changes from a database: do whatever you
+  want with it.
 
-**replisome** doesn't need persistent configuration in the database sending
-the changes, apart from the creation of a logical replication slot. The
-configuration, i.e.  what records to send, is entirely chosen by the client
-connecting. Changing configuration is as simple as stopping the replica and
-restarting it with different parameters (the data stream will recover from
-where previously interrupted).
+You may have noticed a few easy-to-brag-about buzzwords in the opening
+statement: here is why we feel entitled to use them:
 
-**replisome** is released under PostgreSQL license.
+- *Lightweight*: replisome is based on `PostgreSQL logical decoding`_, not on
+  triggers; as such it doesn't require extra work for the database, such as
+  inserting a record in a queue table for every record changed. This makes it
+  more efficient than e.g. `pgq and londiste`_.
 
+- *Flexible*: replisome allows emitting changes only on specific tables,
+  specific columns, specific records. The data produced is JSON and the system
+  doesn't care about the usage of the data: if used as replication system the
+  database receiving the data doesn't require to have matching tables,
+  columns, or data types.
+
+- *Easy to configure*: the entire configuration, from the selection of the
+  data to export to its usage, is a parameter of the script consuming the
+  data; there is no persistent configuration (nodes, subscribers, replication
+  sets...). Changing configuration only requires changing the configuration
+  file the running consumer script is using, stopping and restarting it.
+
+.. _pgq and londiste: skytools_
+.. _skytools: http://pgfoundry.org/projects/skytools
+.. _PostgreSQL logical decoding: https://www.postgresql.org/docs/current/static/logicaldecoding-explanation.html
 .. _pglogical: https://www.2ndquadrant.com/en/resources/pglogical/
 
+**replisome** is not a complete replication solution: it doesn't deal with
+truncate, DDL language, sequences replication, conflicts. If you are looking
+for something like that take a look at pglogical_ instead. What aims to be is
+a more flexible tool for data integration.
+
+
+System description
+==================
+
+The system is composed by two main parts:
+
+- `The sender`__ is a PostgreSQL logical replication decoder plugin that can
+  be widely configured in order to choose what data to emit and how.
+
+- `The receiver`__ is an easy to extend Python framework allowing to
+  manipulate and consume data produced by a sender. It is easy to write your
+  own extensions to this framework, or ditch it altogether and use directly
+  the data produced by the sender.
+
+.. __: `Decoding plugin`_
+.. __: `Consumer Framework`_
+
+
+Decoding plugin
+===============
+
+The decoding plugin is the bit that lives in the PostgreSQL server used as
+data source. Please refer to the documentation__ for an introduction about
+logical decoding.
+
+.. __: `PostgreSQL logical decoding`_
 
 Requirements
-============
+------------
 
-* PostgreSQL 9.4+
+The data source must be PostgreSQL 9.4 or following versions.
 
 
 Build and Install
-=================
+-----------------
+
+TODO: ``pgxn install replisome``.
 
 This thing will be packaged as an extension, have a version number, be
-released on PGXN... but currently it is only available on github::
+released on PGXN... but currently it is only available `on github`__.
 
-    $ git clone https://github.com/GambitResearch/replisome.git
-
-
-Unix based Operating Systems
-----------------------------
+.. __: https://github.com/GambitResearch/replisome
 
 The extension should be compiled and installed in a PostgreSQL installation,
 after which it will be available in the database clusters run by that
@@ -59,31 +112,42 @@ tell you. ::
 
     $ git clone https://github.com/GambitResearch/replisome.git
     $ cd replisome
-    $ export PATH=
     $ make PG_CONFIG=/path/to/bin/pg_config
     $ sudo make PG_CONFIG=/path/to/bin/pg_config install
 
 
-Windows
--------
-
-In a world without walls you don't need windows. But if you happen to do, try
-it and send some patches back.
-
-
 Configuration
-=============
+-------------
 
-You need to set up at least two parameters into ``postgresql.conf``::
+The cluster must be configured to use logical replication: you need to set up
+at least two parameters into ``postgresql.conf``::
 
     wal_level = logical
-    max_replication_slots = 1
+    max_replication_slots = 1       # at least
+    max_wal_senders = 1             # at least
 
 After changing these parameters, a restart is needed.
 
+You will also need enough permission in the ``pg_hba.conf`` to allow
+replication connections, e.g. ::
+
+    local    replication     myuser                     trust
+    host     replication     myuser     10.1.2.3/32     trust
+
+Every replisome consumer must connect to a `replication slot`_, which will
+hold the state of the replication client (so that a consumer stopped will not
+miss the data: on restart it will pick the data from where it left). You can
+create a replication slot using::
+
+    select pg_create_logical_replication_slot('MY NAME', 'replisome');
+
+The name is what will be used by the client to connect to a specific slot.
+
+.. _replication slot: https://www.postgresql.org/docs/current/static/warm-standby.html#STREAMING-REPLICATION-SLOTS
+
 
 Examples
-========
+--------
 
 There are a few ways to obtain the changes (JSON objects) from the
 **replisome** plugin:
@@ -91,28 +155,16 @@ There are a few ways to obtain the changes (JSON objects) from the
 * using `SQL functions`__ such as ``pg_logical_slot_get_changes()``
 * using pg_recvlogical__ from command line.
 * using `psycopg replication protocol support`__.
+* using the `replisome Python package`__.
 
 .. __: https://www.postgresql.org/docs/9.4/static/functions-admin.html#FUNCTIONS-REPLICATION-TABLE
 .. __: https://www.postgresql.org/docs/current/static/app-pgrecvlogical.html
 .. __: http://initd.org/psycopg/docs/advanced.html#replication-protocol-support
+.. __: `Consumer Framework`_
 
 
 Examples using ``pg_recvlogical``
 ---------------------------------
-
-Besides the configuration above, it is necessary to configure a replication
-connection to use ``pg_recvlogical``.
-
-First, add an entry into ``pg_hba.conf``::
-
-    local    replication     myuser                     trust
-    host     replication     myuser     10.1.2.3/32     trust
-
-Also, set ``max_wal_senders`` into ``postgresql.conf``::
-
-    max_wal_senders = 1
-
-A restart is necessary if you change ``max_wal_senders``.
 
 You are ready to try replisome. In one terminal create a replication slot and
 start a replica::
@@ -188,11 +240,11 @@ performed::
 
 
 Options
-=======
+-------
 
 The plugin output content and format is configured by several options passed
 to the START_REPLICATION__ command (e.g. using the ``-o`` option of
-``pg_recvlogical``, the psycopg `start_replication()`__ method etc.
+``pg_recvlogical``, the psycopg `start_replication()`__ method etc).
 
 .. __: https://www.postgresql.org/docs/9.4/static/protocol-replication.html
 .. __: http://initd.org/psycopg/docs/extras.html#psycopg2.extras.ReplicationCursor.start_replication
@@ -277,6 +329,11 @@ to the START_REPLICATION__ command (e.g. using the ``-o`` option of
     not be a valid JSON document and the client is responsible to aggregate
     the parts received.
 
+
+Consumer Framework
+==================
+
+TODO
 
 License
 =======
