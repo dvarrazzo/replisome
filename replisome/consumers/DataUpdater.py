@@ -9,6 +9,8 @@ from replisome.errors import ReplisomeError
 import logging
 logger = logging.getLogger('replisome.DataUpdater')
 
+UNCHANGED_TOAST = {}
+
 
 def tupgetter(*idxs):
     """Like itemgetter, but return a 1-tuple if the input is one index."""
@@ -143,6 +145,10 @@ class DataUpdater(object):
                 self._stmts['D'].pop(k, None)
             self._keynames[k] = msg['keynames']
 
+        rv = self._get_special_statement(cnn, msg)
+        if rv is not None:
+            return rv
+
         op = msg['op']
         stmts = self._stmts[op]
         try:
@@ -158,6 +164,14 @@ class DataUpdater(object):
             stmts[k] = rv
 
         return rv
+
+    def _get_special_statement(self, cnn, msg):
+        """Handle one-off the case of insert with unchanged toast values"""
+        if msg['op'] == 'U':
+            unchs = [i for (i, v) in enumerate(msg['values'])
+                     if v == UNCHANGED_TOAST]
+            if unchs:
+                return self.make_update(cnn, msg, unchanged_idxs=unchs)
 
     def make_insert(self, cnn, msg):
         """
@@ -245,7 +259,7 @@ class DataUpdater(object):
 
         return stmt, acc
 
-    def make_update(self, cnn, msg):
+    def make_update(self, cnn, msg, unchanged_idxs=()):
         """
         Return the query and message-to-argument function to perform an update.
         """
@@ -281,7 +295,8 @@ class DataUpdater(object):
                 "the local table %s.%s is missing some key fields %s" %
                 (s, t, msg_keys))
 
-        idxs = [i for i, c in enumerate(msg_cols) if c in local_cols]
+        idxs = [i for i, c in enumerate(msg_cols)
+                if c in local_cols and i not in unchanged_idxs]
         if not idxs:
             logger.info(
                 "the local table has no field in common with the message")

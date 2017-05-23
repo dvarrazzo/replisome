@@ -158,12 +158,16 @@ def test_insert_conflict(src_db, tgt_db, called):
     tcur = tgt_db.conn.cursor()
 
     scur.execute("drop table if exists testins")
-    scur.execute(
-        "create table testins (id serial primary key, data text, foo text, more text)")
+    scur.execute("""
+        create table testins (
+            id serial primary key, data text, foo text, more text)
+        """)
 
     tcur.execute("drop table if exists testins")
-    tcur.execute(
-        "create table testins ( id integer primary key, data text, foo text, n int)")
+    tcur.execute("""
+        create table testins (
+            id integer primary key, data text, foo text, n int)
+        """)
 
     tcur.execute(
         "insert into testins (id, data, foo, n) values (1, 'foo', 'ouch', 42)")
@@ -456,3 +460,90 @@ def test_delete_missing_table(src_db, tgt_db, called):
 
     tcur.execute("select * from testins2")
     assert tcur.fetchall() == [(2, 'world')]
+
+
+def test_toast(src_db, tgt_db, called):
+    du = DataUpdater(tgt_db.conn.dsn, skip_missing_columns=True)
+    c = called(du, 'process_message')
+
+    rconn = src_db.make_repl_conn()
+    jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)
+    src_db.thread_receive(jr, rconn)
+
+    scur = src_db.conn.cursor()
+    tcur = tgt_db.conn.cursor()
+
+    scur.execute("drop table if exists xpto")
+    scur.execute("""
+        create table xpto (
+            id serial primary key,
+            toast1 text,
+            other float8,
+            toast2 text)
+        """)
+
+    tcur.execute("drop table if exists xpto")
+    tcur.execute("""
+        create table xpto (
+            id integer primary key,
+            toast1 text,
+            other float8,
+            toast2 text)
+        """)
+
+    import logging
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(levelname)s %(message)s')
+
+    # uncompressed external toast data
+    scur.execute("""
+        insert into xpto (toast1, toast2)
+        select string_agg(g.i::text, ''), string_agg((g.i*2)::text, '')
+        from generate_series(1, 2000) g(i)
+        """)
+    c.get()
+    tcur.execute("select * from xpto where id = 1")
+    r1 = tcur.fetchone()
+    assert r1
+    assert len(r1[1]) > 1000
+    assert len(r1[3]) > 1000
+
+    # compressed external toast data
+    scur.execute("""
+        insert into xpto (toast2)
+        select repeat(string_agg(to_char(g.i, 'fm0000'), ''), 50)
+        from generate_series(1, 500) g(i)
+        """)
+    c.get()
+    tcur.execute("select * from xpto where id = 2")
+    r2 = tcur.fetchone()
+    assert r2
+    assert r2[1] is None
+    assert len(r2[3]) > 1000
+
+    # update of existing column
+    scur.execute("""
+        update xpto set toast1 = (select string_agg(g.i::text, '')
+        from generate_series(1, 2000) g(i)) where id = 1
+        """)
+    c.get()
+    tcur.execute("select * from xpto where id = 1")
+    r11 = tcur.fetchone()
+    assert len(r11[1]) > 1000
+    assert r11[1] == r1[1]
+    assert r11[3] == r1[3]
+
+    scur.execute("update xpto set other = 123.456 where id = 1")
+    c.get()
+    tcur.execute("select * from xpto where id = 1")
+    r12 = tcur.fetchone()
+    assert len(r12[1]) > 1000
+    assert len(r12[3]) > 1000
+    assert r11[1] == r12[1]
+    assert r12[3] == r12[3]
+
+    scur.execute("delete from xpto where id = 1")
+    c.get()
+    tcur.execute("select * from xpto where id = 1")
+    assert not tcur.fetchone()

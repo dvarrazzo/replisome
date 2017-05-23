@@ -462,10 +462,10 @@ values_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple t
 		if (isnull && replident)
 			continue;
 
-		/* XXX Unchanged TOAST Datum does not need to be output */
+		/* Unchanged TOAST Datum may not be available */
 		if (!isnull && typisvarlena && VARATT_IS_EXTERNAL_ONDISK(origval))
 		{
-			elog(WARNING, "column \"%s\" has an unchanged TOAST", NameStr(attr->attname));
+			appendStringInfo(ctx->out, "%s{}", comma);
 			continue;
 		}
 
