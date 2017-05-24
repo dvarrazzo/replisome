@@ -45,7 +45,7 @@ def test_insert(src_db):
     assert c['schema'] == 'public'
     assert 'colnames' not in c
     assert 'coltypes' not in c
-    assert c['values'] == [2, u"hello world", 3.14, 1.01, '2017-01-01']
+    assert c['values'] == [2, u"hello world", 3.14, '1.01', '2017-01-01']
     assert 'keynames' not in c
     assert 'keytypes' not in c
     assert 'oldkey' not in c

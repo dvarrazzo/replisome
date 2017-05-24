@@ -1,4 +1,5 @@
 import pytest
+from decimal import Decimal
 
 from replisome.errors import ReplisomeError
 from replisome.consumers.DataUpdater import DataUpdater
@@ -491,11 +492,6 @@ def test_toast(src_db, tgt_db, called):
             toast2 text)
         """)
 
-    import logging
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format='%(levelname)s %(message)s')
-
     # uncompressed external toast data
     scur.execute("""
         insert into xpto (toast1, toast2)
@@ -547,3 +543,37 @@ def test_toast(src_db, tgt_db, called):
     c.get()
     tcur.execute("select * from xpto where id = 1")
     assert not tcur.fetchone()
+
+
+def test_numeric(src_db, tgt_db, called):
+    du = DataUpdater(tgt_db.conn.dsn)
+    c = called(du, 'process_message')
+
+    rconn = src_db.make_repl_conn()
+    jr = JsonReceiver(slot=src_db.slot, message_cb=du.process_message)
+    src_db.thread_receive(jr, rconn)
+
+    scur = src_db.conn.cursor()
+    tcur = tgt_db.conn.cursor()
+
+    for _c in [scur, tcur]:
+        _c.execute("drop table if exists num")
+        _c.execute("""
+            create table num (
+                id integer primary key,
+                num numeric)
+            """)
+
+    scur.execute("""
+        insert into num values
+        (1, 1.000000000000000000000000000000000000000000000000000000000000001)
+        """)
+    scur.execute("select num from num where id = 1")
+    sn = scur.fetchone()[0]
+    assert isinstance(sn, Decimal)
+    assert len(str(sn)) > 20
+
+    c.get()
+    tcur.execute("select num from num where id = 1")
+    tn = tcur.fetchone()[0]
+    assert tn == sn

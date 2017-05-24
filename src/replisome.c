@@ -498,7 +498,6 @@ values_to_stringinfo(LogicalDecodingContext *ctx, TupleDesc tupdesc, HeapTuple t
 				case OIDOID:
 				case FLOAT4OID:
 				case FLOAT8OID:
-				case NUMERICOID:
 					if (pg_strncasecmp(outputstr, "NaN", 3) == 0 ||
 							pg_strncasecmp(outputstr, "Infinity", 8) == 0 ||
 							pg_strncasecmp(outputstr, "-Infinity", 9) == 0)
