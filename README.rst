@@ -10,7 +10,7 @@ of changes describing the data manipulation inside the database (INSERT,
 UPDATE, DELETE of records) in JSON format, for all or a specified subset of
 tables, with the possibility of limiting the columns and rows received.
 
-.. contents:: Table of Contents
+.. contents::
 
 What can you do with data changes?
 
@@ -41,7 +41,7 @@ statement: here is why we feel entitled to use them:
   specific columns, specific records. The data produced is JSON and the system
   doesn't care about the usage of the data: if used as replication system the
   database receiving the data doesn't require to have matching tables,
-  columns, or data types.
+  columns, or data types (as e.g. pglogical_ requires).
 
 - *Easy to configure*: the entire configuration, from the selection of the
   data to export to its usage, is a parameter of the script consuming the
@@ -56,8 +56,8 @@ statement: here is why we feel entitled to use them:
 
 **replisome** is not a complete replication solution: it doesn't deal with
 truncate, DDL language, sequences replication, conflicts. If you are looking
-for something like that take a look at pglogical_ instead. What aims to be is
-a more flexible tool for data integration.
+for something like that take a look at pglogical_ instead. What it aims to be
+is a more flexible tool for data integration.
 
 
 System description
@@ -108,7 +108,9 @@ installation.
 
 In order to build the extension you will need a C compiler, the PostgreSQL
 server development packages and maybe something else that google will friendly
-tell you. ::
+tell you.
+
+.. code:: console
 
     $ git clone https://github.com/GambitResearch/replisome.git
     $ cd replisome
@@ -137,9 +139,11 @@ replication connections, e.g. ::
 Every replisome consumer must connect to a `replication slot`_, which will
 hold the state of the replication client (so that a consumer stopped will not
 miss the data: on restart it will pick the data from where it left). You can
-create a replication slot using::
+create a replication slot using:
 
-    select pg_create_logical_replication_slot('MY NAME', 'replisome');
+.. code:: psql
+
+    =# select pg_create_logical_replication_slot('MY NAME', 'replisome');
 
 The name is what will be used by the client to connect to a specific slot.
 
@@ -167,12 +171,16 @@ Examples using ``pg_recvlogical``
 ---------------------------------
 
 You are ready to try replisome. In one terminal create a replication slot and
-start a replica::
+start a replica:
+
+.. code:: console
 
     $ pg_recvlogical -d postgres --slot test_slot --create-slot -P replisome
     $ pg_recvlogical -d postgres --slot test_slot --start -o pretty-print=1 -f -
 
-In another terminal connect to the database and enter some commands::
+In another terminal connect to the database and enter some commands:
+
+.. code:: psql
 
     =# create table test (
        id serial primary key, data text, ts timestamptz default now());
@@ -194,7 +202,9 @@ In another terminal connect to the database and enter some commands::
 
 
 The streaming connection should display a description of the operations
-performed::
+performed:
+
+.. code:: json
 
     {
         "tx": [
@@ -281,7 +291,7 @@ to the START_REPLICATION__ command (e.g. using the ``-o`` option of
 
     Example (as ``pg_recvlogical`` option)::
 
-        -o ' {"tables": "^test.*", "skip_columns": ["ts", "wat"], "where": "id % 2 = 0"}'
+        -o '{"tables": "^test.*", "skip_columns": ["ts", "wat"], "where": "id % 2 = 0"}'
 
 ``exlcude`` [``json``]
     Choose what table to exclude. The format is the same of ``include`` but
@@ -333,7 +343,110 @@ to the START_REPLICATION__ command (e.g. using the ``-o`` option of
 Consumer Framework
 ==================
 
-TODO
+The consumer framework consists in a script entry point called ``replisome``,
+taking a configuration file to describe where to read the data, how to
+transform it and what to do with it. Any Python callable can be used to
+transform and consume data; a few useful objects are provided as part of the
+package.
+
+
+Requirements
+------------
+
+Python 2.7 or following [TODO: python 3]
+
+
+Installation
+------------
+
+TODO: ``pip install replisome``
+
+Currently, clone the repos and ``python setup.py install``
+
+
+Usage
+-----
+
+The ``replisome`` command ine parameters are:
+
+.. parsed-literal::
+
+    usage: replisome [-h] [--dsn *DSN*] [--slot *SLOT*] [-v | -q] [*configfile*]
+
+    Receive data from a database, do something with it.
+
+    positional arguments:
+      *configfile*     configuration file to parse; if not specified print on
+                     stderr
+
+    optional arguments:
+      -h, --help     show this help message and exit
+      --dsn *DSN*      database to read from (overrides the config file)
+      --slot *SLOT*    the replication slot to connect to (overrides the config
+                     file)
+      -v, --verbose  print debugging information to stderr
+      -q, --quiet    minimal output on stderr
+
+If *configfile* is not specified, ``--dsn`` and ``--slot`` must be used: the
+script will print on stdout all the changes read in the database connected.
+More interesting stuff can be done specifying a *configfile*.
+
+
+Configuration
+-------------
+
+The ``replisome`` configuration file must be a YAML file describing a
+process pipeline (one receiver, zero or more filters, one consumer). Example:
+
+.. code:: yaml
+
+    receiver:
+        class: JsonReceiver
+        dsn: "dbname=source host=sourcedb"
+        slot: someslot
+        options:
+            pretty_print: false
+            includes:
+              - schema: myapp
+                tables: '^contract(_expired_\d{6})?$'
+                where: "seller in ('alice', 'bob')"
+              - schema: myapp
+                table: account
+                skip_columns: [password]
+
+    filters:
+      - class: TableRenamer
+        options:
+            from_schema: myapp
+            to_schema: otherapp
+
+    consumer:
+        class: DataUpdater
+        options:
+            dsn: "dbname=target host=targetdb"
+            skip_missing_columns: true
+
+Every object is specified by a ``class`` entry, which should be the name of
+one of the `objects provided by the package`__ or a fully qualified Python
+callable (e.g. ``mypackage.mymodule.MyClass``). In either case the object will
+be called passing the content of the ``options`` object as keyword
+argument.
+
+Receivers must subclass the TODO class; filters and consumers can be any
+callable object (i.e. the object returned by the ``class`` specified in the
+config file must be a callable itself): filters will take a JSON message as
+input (decoded as Python objects) and should return a new message, which will
+be passed to the following filters and eventually to the consumer. If a filter
+returns ``None`` the message is dropped. The consumer must be a callable
+taking a message too; the return value is discarded.
+
+Only after the consumer has processed a message the server will receive the
+feedback that the message is consumed. If processing is interrupted for any
+reason (user interruption, network error, Python exception) replication will
+restart from the point when it was interrupted.
+
+.. __: https://github.com/GambitResearch/replisome/tree/master/replisome
+
 
 License
 =======
