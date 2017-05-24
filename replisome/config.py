@@ -23,30 +23,36 @@ def parse_yaml_file(f):
         raise ConfigError("bad config file: %s" % e)
 
 
-def make_pipeline(config):
+def make_pipeline(config, dsn=None, slot=None):
     pl = Pipeline()
-    pl.receiver = make_receiver(config.get('receiver'))
+    pl.receiver = make_receiver(config.get('receiver'), dsn=dsn, slot=slot)
     pl.consumer = make_consumer(config.get('consumer'))
     for f in make_filters(config.get('filters')):
         pl.filters.append(f)
     return pl
 
 
-def make_receiver(config):
+def make_receiver(config, dsn=None, slot=None):
     try:
         obj = make_object(config, package='replisome.receivers')
     except ConfigError as e:
         raise ConfigError("bad receiver configuration: %s" % e)
 
-    try:
-        obj.dsn = config.pop('dsn')
-    except KeyError:
-        raise ConfigError("no dsn defined in receiver")
+    if dsn is not None:
+        obj.dsn = dsn
+    else:
+        try:
+            obj.dsn = config.pop('dsn')
+        except KeyError:
+            raise ConfigError("no receiver dsn specified")
 
-    try:
-        obj.slot = config.pop('slot')
-    except KeyError:
-        raise ConfigError("no slot defined in receiver")
+    if slot is not None:
+        obj.slot = slot
+    else:
+        try:
+            obj.slot = config.pop('slot')
+        except KeyError:
+            raise ConfigError("no receiver slot specified")
 
     obj.plugin = config.pop('plugin', 'replisome')
 
@@ -99,10 +105,7 @@ def make_object(config, package=None):
     except KeyError:
         raise ConfigError("no class specified")
 
-    try:
-        options = config.pop('options')
-    except KeyError:
-        raise ConfigError("no options specified")
+    options = config.pop('options', {})
 
     if not isinstance(options, dict):
         raise ConfigError("options should be an object")
