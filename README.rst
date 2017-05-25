@@ -67,7 +67,7 @@ The system is composed of two main parts:
 - `The sender`__ is a PostgreSQL logical replication decoder plugin that can
   be widely configured in order to choose what data to emit and how.
 
-- `The receiver`__ is an easy to extend Python framework allowing manipualtion
+- `The receiver`__ is an easy to extend Python framework allowing manipulation
   and consumption of data produced by a sender. It is easy to write your
   own extensions to this framework, or ditch it altogether and make direct use
   of the data produced by the sender.
@@ -265,7 +265,7 @@ to the START_REPLICATION__ command (e.g. using the ``-o`` option of
     Choose which tables and filter content from those tables. This command
     together with ``exclude`` can be used several times: each table will be
     considered for inclusion or exclusion by matching it against all the
-    commands specified in order from left to right. The last matching command
+    commands specified in order from top to bottom. The last matching command
     will override previous commands. (e.g. you may exclude an entire schema and
     then include only one specific table from it).
 
@@ -375,15 +375,15 @@ The ``replisome`` command line parameters are:
 
     positional arguments:
       *configfile*     configuration file to parse; if not specified print to
-                       stderr
+                     stderr
 
     optional arguments:
-      -h, --help       show this help message and exit
+      -h, --help     show this help message and exit
       --dsn *DSN*      database to read from (overrides the config file)
       --slot *SLOT*    the replication slot to connect to (overrides the config
-                       file)
-      -v, --verbose    print debugging information to stderr
-      -q, --quiet      minimal output on stderr
+                     file)
+      -v, --verbose  print debugging information to stderr
+      -q, --quiet    minimal output on stderr
 
 If *configfile* is not specified, ``--dsn`` and ``--slot`` must be used: the
 script will print on stdout all the changes read in the database connected.
@@ -432,11 +432,11 @@ arguments.
 
 Receivers must subclass the TODO class; filters and consumers can be any
 callable object (i.e. the object returned by the ``class`` specified in the
-config file must be a callable itself): filters will take a JSON message as
-input (decoded as Python objects) and should return a new message, which will
-be passed to the following filters and eventually to the consumer. If a filter
-returns ``None`` the message is dropped. The consumer must be a callable
-taking a message too. The return value is discarded.
+configuration file must be a callable itself): filters will take a JSON
+message as input (decoded as Python objects) and should return a new message,
+which will be passed to the following filters and eventually to the consumer.
+If a filter returns ``None`` the message is dropped. The consumer must be a
+callable taking a message too. The return value is discarded.
 
 Only after the consumer has processed a message will the server receive a
 notification that the message has been consumed. If processing is interrupted
