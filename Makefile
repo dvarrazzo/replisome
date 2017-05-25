@@ -1,4 +1,5 @@
-MODULE_big = replisome
+EXTENSION = replisome
+MODULE_big = $(EXTENSION)
 
 OBJS = src/replisome.o src/executor.o src/includes.o src/jsonbutils.o \
 		src/reldata.o
@@ -8,9 +9,18 @@ REGRESS = --inputdir=tests \
 		delete3 delete4 include repschema row_filter savepoint specialvalue \
 		toast bytea
 
+EXTVER = $(shell grep 'default_version' $(EXTENSION).control \
+		 | sed "s/\([^']\+'\)\([^']\+\)\('.*\)/\2/")
+
+DATA_built = sql/$(EXTENSION)--$(EXTVER).sql
+
 PG_CONFIG = pg_config
 PGXS := $(shell $(PG_CONFIG) --pgxs)
 include $(PGXS)
+
+sql/$(EXTENSION)--$(EXTVER).sql: sql/$(EXTENSION).sql
+	cat $< > $@
+
 
 # make installcheck
 #
