@@ -7,6 +7,8 @@
 
 #include "includes.h"
 
+#define REPLISOME_VERSION "0.1.0"
+
 typedef struct JsonDecodingData
 {
 	MemoryContext context;

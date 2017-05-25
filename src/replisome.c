@@ -79,6 +79,15 @@ _PG_output_plugin_init(OutputPluginCallbacks *cb)
 	cb->shutdown_cb = rs_decode_shutdown;
 }
 
+/* Return the interal version as a string */
+PG_FUNCTION_INFO_V1(replisome_version);
+
+Datum
+replisome_version(PG_FUNCTION_ARGS)
+{
+	PG_RETURN_TEXT_P(cstring_to_text(REPLISOME_VERSION));
+}
+
 /* Initialize this plugin */
 static void
 rs_decode_startup(LogicalDecodingContext *ctx, OutputPluginOptions *opt, bool is_init)

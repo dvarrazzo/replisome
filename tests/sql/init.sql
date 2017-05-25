@@ -25,3 +25,8 @@ RETURNS SETOF text LANGUAGE sql AS $$
 		'regression_slot', NULL, NULL,
 		variadic '{pretty-print,1}'::text[] || args);
 $$;
+
+
+create extension replisome;
+
+select replisome_version();
