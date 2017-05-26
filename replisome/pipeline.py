@@ -1,12 +1,7 @@
 import psycopg2
-from distutils.version import StrictVersion
 
 from .errors import ReplisomeError
-
-
-# Complain if the server doesn't speak a version between these two
-MIN_VER = StrictVersion('0.1')
-MAX_VER = StrictVersion('0.2')
+from .version import check_version
 
 
 class Pipeline(object):
@@ -64,12 +59,9 @@ class Pipeline(object):
             else:
                 raise
         else:
-            version = cur.fetchone()[0]
+            ver = cur.fetchone()[0]
         finally:
             cnn.rollback()
             cnn.close()
 
-        if not MIN_VER <= version < MAX_VER:
-            raise ReplisomeError(
-                'this client supports server versions between %s and %s; '
-                'the server has %s installed' % (MIN_VER, MAX_VER, version))
+        check_version(ver)

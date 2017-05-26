@@ -6,6 +6,7 @@ import sys
 
 from .errors import ReplisomeError
 from .config import parse_yaml, make_pipeline
+from .version import VERSION
 
 import logging
 logger = logging.getLogger('replisome')
@@ -33,6 +34,9 @@ def parse_cmdline():
     parser = ArgumentParser(description=__doc__)
     parser.add_argument('configfile', nargs='?',
         help="configuration file to parse; if not specified print on stderr")
+
+    parser.add_argument('--version', action='version',
+        version='%%(prog)s %s' % VERSION)
 
     parser.add_argument('--dsn',
         help="database to read from (override config file)")

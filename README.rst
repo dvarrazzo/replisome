@@ -391,6 +391,7 @@ The ``replisome`` command line parameters are:
 
     optional arguments:
       -h, --help     show this help message and exit
+      --version      show program's version number and exit
       --dsn *DSN*      database to read from (overrides the config file)
       --slot *SLOT*    the replication slot to connect to (overrides the config
                      file)
