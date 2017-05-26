@@ -17,6 +17,14 @@ def src_db():
     db = TestDatabase(dsn)
     db.drop_slot()
     db.create_slot(if_not_exists=True)
+
+    # Create the extension to make the version number available
+    cnn = db.make_conn()
+    cur = cnn.cursor()
+    cur.execute('drop extension if exists replisome')
+    cur.execute('create extension replisome')
+    cnn.close()
+
     yield db
     db.teardown()
 
