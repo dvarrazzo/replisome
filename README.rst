@@ -116,6 +116,18 @@ find by googling the problem.
     $ make PG_CONFIG=/path/to/bin/pg_config
     $ sudo make PG_CONFIG=/path/to/bin/pg_config install
 
+The extension should be loaded in the database you want to use as data source.
+Currently the extension only exports a function ``replisome_version()`` which
+the `replisome client`__ uses to verify it is communicating with a server with
+known protocol: if you will use your own receiver this step is not strictly
+necessary:
+
+.. code:: console
+
+    $ psql -c "create extension replisome" "$TARGET_DATABASE"
+
+.. __: `Consumer framework`_
+
 
 Configuration
 -------------
