@@ -9,10 +9,17 @@ REGRESS = --inputdir=tests \
 		delete3 delete4 include repschema row_filter savepoint specialvalue \
 		toast bytea
 
+# Grab the extension version (for extension upgrade) from control file
 EXTVER = $(shell grep 'default_version' $(EXTENSION).control \
 		 | sed "s/\([^']\+'\)\([^']\+\)\('.*\)/\2/")
 
+# Grab the replisome version (to check protocol compatibility) from python code
+RSVER = $(shell grep '^VERSION' replisome/version.py \
+		 | sed "s/\([^'\"]\+'\)\([^'\"]\+\)\('.*\)/\2/")
+
 DATA_built = sql/$(EXTENSION)--$(EXTVER).sql
+
+PG_CPPFLAGS = -DREPLISOME_VERSION=$(RSVER)
 
 PG_CONFIG = pg_config
 PGXS := $(shell $(PG_CONFIG) --pgxs)

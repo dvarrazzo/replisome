@@ -7,7 +7,9 @@
 
 #include "includes.h"
 
-#define REPLISOME_VERSION "0.1.0"
+#ifndef REPLISOME_VERSION
+#define REPLISOME_VERSION unknown
+#endif
 
 typedef struct JsonDecodingData
 {

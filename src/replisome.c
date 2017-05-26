@@ -85,7 +85,15 @@ PG_FUNCTION_INFO_V1(replisome_version);
 Datum
 replisome_version(PG_FUNCTION_ARGS)
 {
-	PG_RETURN_TEXT_P(cstring_to_text(REPLISOME_VERSION));
+
+/* macro trick to stringify a macro expansion */
+#define xstr(s) str(s)
+#define str(s) #s
+
+	PG_RETURN_TEXT_P(cstring_to_text(xstr(REPLISOME_VERSION)));
+
+#undef str
+#undef xstr
 }
 
 /* Initialize this plugin */
