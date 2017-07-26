@@ -199,6 +199,7 @@ class DataUpdater(object):
 
         idxs = [i for i, c in enumerate(msg_cols) if c in local_cols]
 
+        nokeyidxs = []
         if self.upsert:
             if cnn.server_version < 90500:
                 raise ReplisomeError(
@@ -206,13 +207,11 @@ class DataUpdater(object):
 
             key_cols = self.get_table_pkey(cnn, s, t)
             if key_cols is None:
-                logger.info("table %s.%s can't have upsert: no primary key")
-                return None, None
+                logger.warning("table %s.%s can't have upsert: no primary key")
 
-            nokeyidxs = [i for i, c in enumerate(msg_cols)
-                        if c in local_cols and c not in key_cols]
-        else:
-            nokeyidxs = None
+            else:
+                nokeyidxs = [i for i, c in enumerate(msg_cols)
+                            if c in local_cols and c not in key_cols]
 
         if not idxs:
             logger.info(
@@ -224,7 +223,7 @@ class DataUpdater(object):
             len(idxs))
         colmap = tupgetter(*idxs)
 
-        def acc(msg, _map=tupgetter(*(idxs + (nokeyidxs or [])))):
+        def acc(msg, _map=tupgetter(*(idxs + nokeyidxs))):
             return _map(msg['values'])
 
         cols = colmap(msg_cols)
@@ -240,7 +239,7 @@ class DataUpdater(object):
         bits.append(sql.SQL(',').join(sql.Placeholder() * len(cols)))
         bits.append(sql.SQL(')'))
 
-        if self.upsert:
+        if self.upsert and key_cols is not None:
             bits.append(sql.SQL(' on conflict ('))
             bits.append(sql.SQL(',').join(map(sql.Identifier, key_cols)))
             if nokeyidxs:
