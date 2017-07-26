@@ -223,7 +223,7 @@ class DataUpdater(object):
             len(idxs))
         colmap = tupgetter(*idxs)
 
-        def acc(msg, _map=tupgetter(*(idxs + nokeyidxs))):
+        def acc(msg, _map=colmap):
             return _map(msg['values'])
 
         cols = colmap(msg_cols)
@@ -244,10 +244,13 @@ class DataUpdater(object):
             bits.append(sql.SQL(',').join(map(sql.Identifier, key_cols)))
             if nokeyidxs:
                 bits.append(sql.SQL(') do update set ('))
-                bits.append(sql.SQL(',').join(map(
-                    sql.Identifier, tupgetter(*nokeyidxs)(msg_cols))))
+                bits.append(sql.SQL(',').join(
+                    [sql.Identifier(n)
+                        for n in tupgetter(*nokeyidxs)(msg_cols)]))
                 bits.append(sql.SQL(') = ('))
-                bits.append(sql.SQL(',').join(sql.Placeholder() * len(nokeyidxs)))
+                bits.append(sql.SQL(',').join(
+                    [sql.SQL('excluded.') + sql.Identifier(n)
+                        for n in tupgetter(*nokeyidxs)(msg_cols)]))
                 bits.append(sql.SQL(')'))
             else:
                 bits.append(sql.SQL(') do nothing'))
