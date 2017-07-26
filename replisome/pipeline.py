@@ -16,7 +16,7 @@ class Pipeline(object):
         self.consumer = None
         self.state = self.NOT_STARTED
 
-    def start(self):
+    def start(self, lsn=None):
         if self.state != self.NOT_STARTED:
             raise ValueError("can't start pipeline in state %s" % self.state)
 
@@ -31,7 +31,7 @@ class Pipeline(object):
         cnn = self.receiver.create_connection()
 
         self.state = self.RUNNING
-        self.receiver.start(cnn)
+        self.receiver.start(cnn, lsn=lsn)
 
     def stop(self):
         if self.state != self.RUNNING:

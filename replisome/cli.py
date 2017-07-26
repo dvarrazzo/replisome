@@ -26,7 +26,7 @@ def main():
             'consumer': {'class': 'Printer'}}
 
     pl = make_pipeline(conf, dsn=opt.dsn, slot=opt.slot)
-    pl.start()
+    pl.start(lsn=opt.lsn)
 
 
 def parse_cmdline():
@@ -42,6 +42,8 @@ def parse_cmdline():
         help="database to read from (override config file)")
     parser.add_argument('--slot',
         help="the replication slot to connect to (override config file)")
+    parser.add_argument('--lsn', default='0/0',
+        help="the replication starting point [default: %(default)s]")
 
     g = parser.add_mutually_exclusive_group()
     g.add_argument('-v', '--verbose', dest='loglevel',

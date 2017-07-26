@@ -56,7 +56,7 @@ class JsonReceiver(object):
     def __del__(self):
         self.stop()
 
-    def start(self, connection, create=False):
+    def start(self, connection, create=False, lsn=None):
         if not self.slot:
             raise ValueError("no slot specified")
 
@@ -70,7 +70,7 @@ class JsonReceiver(object):
             cur.create_replication_slot(self.slot, output_plugin=self.plugin)
             wait_select(connection)
 
-        stmt = self.get_replication_statement(connection)
+        stmt = self._get_replication_statement(connection, lsn)
 
         # NOTE: it is currently necessary to write in chunk even if this
         # results in messages containing invalid JSON (which are assembled
@@ -104,15 +104,16 @@ class JsonReceiver(object):
     def stop(self):
         os.write(self._shutdown_pipe[1], 'stop')
 
-    def get_replication_statement(self, cnn):
+    def _get_replication_statement(self, cnn, lsn):
         options = (
             [('write-in-chunks', '1')] +
             self.options)
 
         bits = [
             sql.SQL("START_REPLICATION SLOT "),
-            sql.Identifier(self.slot) +
-            sql.SQL(" LOGICAL 0/0")]
+            sql.Identifier(self.slot),
+            sql.SQL(" LOGICAL "),
+            sql.SQL(lsn or '0/0')]
 
         if options:
             bits.append(sql.SQL(' ('))
