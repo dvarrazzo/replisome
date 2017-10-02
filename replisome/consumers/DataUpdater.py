@@ -207,7 +207,8 @@ class DataUpdater(object):
 
             key_cols = self.get_table_pkey(cnn, s, t)
             if key_cols is None:
-                logger.warning("table %s.%s can't have upsert: no primary key")
+                logger.warning(
+                    "table %s.%s can't have upsert: no primary key", s, t)
 
             else:
                 nokeyidxs = [i for i, c in enumerate(msg_cols)
