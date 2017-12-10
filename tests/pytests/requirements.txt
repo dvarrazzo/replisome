@@ -1,0 +1,4 @@
+# This file can be used to install pytest and test the installed package
+# as opposite as running `python setup.py test` which will always test the
+# project source.
+pytest
