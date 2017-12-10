@@ -13,7 +13,7 @@ def test_version():
         '--version']
 
     from replisome.version import VERSION
-    rv = sp.check_output(cmdline, stderr=sp.STDOUT)
+    rv = sp.check_output(cmdline, stderr=sp.STDOUT).decode('ascii')
     assert rv == 'replisome %s\n' % VERSION
 
 

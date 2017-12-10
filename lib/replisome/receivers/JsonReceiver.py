@@ -102,7 +102,7 @@ class JsonReceiver(object):
                 break
 
     def stop(self):
-        os.write(self._shutdown_pipe[1], 'stop')
+        os.write(self._shutdown_pipe[1], b'stop')
 
     def _get_replication_statement(self, cnn, lsn):
         options = (
@@ -136,13 +136,13 @@ class JsonReceiver(object):
                 logger.debug("server: %s", n.rstrip())
             del cnn.notices[:]
 
+        chunk = msg.payload.decode('ascii')
         logger.debug(
             "message received:\n\t%s%s",
-            msg.payload[:70], len(msg.payload) > 70 and '...' or '')
-        chunk = msg.payload
+            chunk[:70], len(chunk) > 70 and '...' or '')
         self._chunks.append(chunk)
 
-        if chunk == ']}' or chunk == '\t]\n}':
+        if chunk == u']}' or chunk == u'\t]\n}':
             obj = json.loads(''.join(self._chunks))
             del self._chunks[:]
             self.message_cb(obj)

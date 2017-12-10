@@ -1,4 +1,4 @@
-from Queue import Queue, Empty
+from six.moves.queue import Queue, Empty
 import pytest
 
 import logging

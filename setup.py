@@ -17,7 +17,10 @@ with open(os.path.join(DIR, "lib/replisome/version.py")) as f:
 classifiers = """
 Development Status :: 3 - Alpha
 License :: OSI Approved :: BSD License
+Programming Language :: Python :: 2
 Programming Language :: Python :: 2.7
+Programming Language :: Python :: 3
+Programming Language :: Python :: 3.5
 Topic :: Database
 """
 
@@ -66,7 +69,7 @@ setup(
     url='https://github.com/GambitResearch/replisome',
     keywords=['database', 'replication', 'PostgreSQL'],
     classifiers=[x for x in classifiers.strip().splitlines()],
-    install_requires=['PyYAML', 'psycopg2>=2.7'],
+    install_requires=['six', 'PyYAML', 'psycopg2>=2.7'],
     tests_require=parse_requirements(
         os.path.join(DIR, 'tests/pytests/requirements.txt')),
     zip_safe=False,

@@ -1,5 +1,5 @@
 import pytest
-from Queue import Queue, Empty
+from six.moves.queue import Queue, Empty
 
 from replisome.receivers.JsonReceiver import JsonReceiver
 
@@ -89,7 +89,7 @@ def test_break_half_message(src_db):
     class BrokenReceiver(JsonReceiver):
         def consume(self, msg):
             # Throw a tantrum just before closing the message
-            if msg.payload == ']}':
+            if msg.payload == b']}':
                 raise ZeroDivisionError
             return super(BrokenReceiver, self).consume(msg)
 
