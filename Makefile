@@ -14,7 +14,7 @@ EXTVER = $(shell grep 'default_version' $(EXTENSION).control \
 		 | sed "s/\([^']\+'\)\([^']\+\)\('.*\)/\2/")
 
 # Grab the replisome version (to check protocol compatibility) from python code
-RSVER = $(shell grep '^VERSION' replisome/version.py \
+RSVER = $(shell grep '^VERSION' lib/replisome/version.py \
 		 | sed "s/\([^'\"]\+'\)\([^'\"]\+\)\('.*\)/\2/")
 
 DATA_built = sql/$(EXTENSION)--$(EXTVER).sql

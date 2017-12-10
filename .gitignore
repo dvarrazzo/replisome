@@ -7,4 +7,6 @@ README.html
 /env
 /.cache
 /build
-/replisome.egg-info/
+/dist
+/lib/replisome.egg-info/
+/.eggs
