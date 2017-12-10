@@ -1,6 +1,8 @@
 import os
 import re
+import sys
 from setuptools import setup, find_packages
+from setuptools.command.test import test as TestCommand
 
 DIR = os.path.dirname(__file__)
 
@@ -18,6 +20,25 @@ License :: OSI Approved :: BSD License
 Programming Language :: Python :: 2.7
 Topic :: Database
 """
+
+
+class PyTest(TestCommand):
+    """
+    Class to integrate py.test with setuptools.
+    """
+    user_options = [('pytest-args=', 'a', "Arguments to pass to pytest")]
+
+    def initialize_options(self):
+        TestCommand.initialize_options(self)
+        self.pytest_args = ''
+
+    def run_tests(self):
+        import shlex
+        # import here, cause outside the eggs aren't loaded
+        import pytest
+        errno = pytest.main(shlex.split(self.pytest_args))
+        sys.exit(errno)
+
 
 setup(
     name='replisome',
@@ -38,4 +59,5 @@ setup(
             'replisome = replisome.cli:entry_point',
         ],
     },
+    cmdclass={'test': PyTest},
 )
