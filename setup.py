@@ -1,6 +1,6 @@
 import os
 import re
-from setuptools import setup
+from setuptools import setup, find_packages
 
 DIR = os.path.dirname(__file__)
 
@@ -21,7 +21,7 @@ Topic :: Database
 
 setup(
     name='replisome',
-    packages=['replisome', 'replisome.consumers', 'replisome.receivers'],
+    packages=find_packages(exclude=['*.tests']),
     version=version,
     description=readme[0],
     long_description='\n'.join(readme[2:]).lstrip(),
