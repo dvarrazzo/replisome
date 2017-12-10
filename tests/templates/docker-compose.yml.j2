@@ -4,26 +4,26 @@ services:
   base:
     build:
       context: ../..
-      dockerfile: tests/docker/base.Dockerfile
-    image: replisome/base
+      dockerfile: tests/build/base.Dockerfile
+    image: replisome/base.{{pg_ver}}
 
   master:
     build:
       context: ../..
-      dockerfile: tests/docker/master.Dockerfile
+      dockerfile: tests/build/master.Dockerfile
     depends_on:
       - base
 
   slave:
     build:
       context: ../..
-      dockerfile: tests/docker/slave.Dockerfile
+      dockerfile: tests/build/slave.Dockerfile
     depends_on:
       - base
 
   test:
     build:
       context: ../..
-      dockerfile: tests/docker/test.Dockerfile
+      dockerfile: tests/build/test.Dockerfile
     depends_on:
       - base

@@ -5,7 +5,7 @@ RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 \
 RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ xenial-pgdg main" \
     > /etc/apt/sources.list.d/pgdg.list
 
-RUN apt-get update
+RUN apt-get -qq update
 
-RUN apt-get install -y build-essential sudo \
-    postgresql-9.6 postgresql-client-9.6 postgresql-server-dev-9.6
+RUN apt-get install -y -qq build-essential sudo \
+    postgresql-{{pg_ver}} postgresql-client-{{pg_ver}} postgresql-server-dev-{{pg_ver}}

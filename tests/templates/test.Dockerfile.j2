@@ -1,0 +1,12 @@
+FROM replisome/base.{{pg_ver}}
+
+RUN apt-get -qq install -y python{{py_ver}} python{{maybe3}}-pip
+RUN pip{{maybe3}} install -q -U pip
+
+ADD tests/pytests/requirements.txt /code/tests/pytests/
+RUN pip{{maybe3}} install -q -r /code/tests/pytests/requirements.txt
+
+ADD ./ /code
+WORKDIR /code
+
+RUN python{{py_ver}} setup.py install
