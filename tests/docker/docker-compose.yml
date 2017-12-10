@@ -1,0 +1,29 @@
+version: '2'
+
+services:
+  base:
+    build:
+      context: ../..
+      dockerfile: tests/docker/base.Dockerfile
+    image: replisome/base
+
+  master:
+    build:
+      context: ../..
+      dockerfile: tests/docker/master.Dockerfile
+    depends_on:
+      - base
+
+  slave:
+    build:
+      context: ../..
+      dockerfile: tests/docker/slave.Dockerfile
+    depends_on:
+      - base
+
+  test:
+    build:
+      context: ../..
+      dockerfile: tests/docker/test.Dockerfile
+    depends_on:
+      - base

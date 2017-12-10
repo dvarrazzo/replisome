@@ -1,0 +1,32 @@
+
+# Travis CI configuration file for psycopg2
+
+dist: trusty
+sudo: required
+language: python
+
+services:
+  - docker
+
+python:
+  - 2.7
+
+env:
+  global:
+    - COMPOSE_FILE=tests/docker/docker-compose.yml
+
+install:
+  - docker-compose build
+  - docker-compose up -d
+
+script:
+  - docker-compose run --rm
+      -e PGHOST=master -e PGUSER=postgres
+      test make installcheck
+  - docker-compose run --rm
+      -e RS_TEST_SRC_DSN="host=master user=postgres"
+      -e RS_TEST_TGT_DSN="host=slave user=postgres"
+      test py.test
+
+notifications:
+  email: false
