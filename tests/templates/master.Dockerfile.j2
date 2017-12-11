@@ -1,0 +1,25 @@
+FROM replisome/base.{{pg_ver}}
+
+RUN sudo -u postgres mkdir /var/run/postgresql/{{pg_ver}}-main.pg_stat_tmp/
+
+RUN echo 'host all postgres 0.0.0.0/0 trust' \
+    >> /etc/postgresql/{{pg_ver}}/main/pg_hba.conf
+RUN echo 'host replication postgres 0.0.0.0/0 trust' \
+    >> /etc/postgresql/{{pg_ver}}/main/pg_hba.conf
+
+RUN sed -i "s/.*listen_addresses.*/listen_addresses = '0.0.0.0'/" \
+    /etc/postgresql/{{pg_ver}}/main/postgresql.conf
+RUN sed -i "s/.*wal_level.*/wal_level = logical/" \
+    /etc/postgresql/{{pg_ver}}/main/postgresql.conf
+RUN sed -i "s/.*max_replication_slots.*/max_replication_slots = 4/" \
+    /etc/postgresql/{{pg_ver}}/main/postgresql.conf
+RUN sed -i "s/.*max_wal_senders.*/max_wal_senders = 4/" \
+    /etc/postgresql/{{pg_ver}}/main/postgresql.conf
+
+ADD ./ /code
+WORKDIR /code
+
+RUN make install
+
+CMD ["sudo", "-u", "postgres", "/usr/lib/postgresql/{{pg_ver}}/bin/postgres", \
+    "-c", "config_file=/etc/postgresql/{{pg_ver}}/main/postgresql.conf"]

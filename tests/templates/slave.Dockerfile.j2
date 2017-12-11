@@ -1,0 +1,12 @@
+FROM replisome/base.{{pg_ver}}
+
+RUN sudo -u postgres mkdir /var/run/postgresql/{{pg_ver}}-main.pg_stat_tmp/
+
+RUN echo 'host all postgres 0.0.0.0/0 trust' \
+    >> /etc/postgresql/{{pg_ver}}/main/pg_hba.conf
+
+RUN sed -i "s/.*listen_addresses.*/listen_addresses = '0.0.0.0'/" \
+    /etc/postgresql/{{pg_ver}}/main/postgresql.conf
+
+CMD ["sudo", "-u", "postgres", "/usr/lib/postgresql/{{pg_ver}}/bin/postgres", \
+    "-c", "config_file=/etc/postgresql/{{pg_ver}}/main/postgresql.conf"]

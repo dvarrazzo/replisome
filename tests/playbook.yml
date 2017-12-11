@@ -1,0 +1,21 @@
+# Build docker-compose files to test specific versions of python or postgres
+# The following variables must be set:
+#  - pg_ver
+#  - py_ver
+
+- hosts: localhost
+  vars:
+    - maybe3: '{{py_ver|regex_replace("2?\..*", "")}}'
+
+  tasks:
+  - name: create docker files directory
+    file: name=build state=directory
+
+  - name: build docker templates
+    template: src=templates/{{item}}.j2 dest=build/{{item}}
+    with_items:
+      - docker-compose.yml
+      - base.Dockerfile
+      - master.Dockerfile
+      - slave.Dockerfile
+      - test.Dockerfile

@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import pytest
 import subprocess as sp
@@ -9,6 +10,7 @@ from .test_config import SRC_SCHEMA
 
 def test_version():
     cmdline = [
+        sys.executable,
         os.path.join(os.path.dirname(__file__), '../../scripts/replisome'),
         '--version']
 
