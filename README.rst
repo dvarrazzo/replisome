@@ -2,6 +2,12 @@
 replisome - handsomely replicate something
 ==========================================
 
+|travis|
+
+.. |travis| image:: https://travis-ci.org/GambitResearch/replisome.svg?branch=master
+    :target: https://travis-ci.org/GambitResearch/replisome
+    :alt: Build status
+
 The project is currently in pre-production phase. We are hacking on it.
 
 **replisome** is a *lightweight*, *flexible*, and *easily configurable* system to
