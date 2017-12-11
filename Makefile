@@ -20,6 +20,9 @@ RSVER = $(shell grep '^VERSION' lib/replisome/version.py \
 DATA_built = sql/$(EXTENSION)--$(EXTVER).sql
 
 PG_CPPFLAGS = -DREPLISOME_VERSION=$(RSVER)
+EXTRA_CLEAN = lib/*/*.pyc lib/*/*/*.pyc tests/*/*.pyc \
+	lib/*/__pycache__/ lib/*/*/__pycache__ tests/*/__pycache__/ \
+	.eggs .cache lib/*.egg-info tests/build tests/playbook.retry
 
 PG_CONFIG = pg_config
 PGXS := $(shell $(PG_CONFIG) --pgxs)

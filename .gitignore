@@ -5,6 +5,7 @@ replisome.so
 *.o
 README.html
 /env
+/env?
 /.cache
 /build
 /dist
