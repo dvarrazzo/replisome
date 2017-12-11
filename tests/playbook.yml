@@ -4,9 +4,6 @@
 #  - py_ver
 
 - hosts: localhost
-  vars:
-    - maybe3: '{{py_ver|regex_replace("2?\..*", "")}}'
-
   tasks:
   - name: create docker files directory
     file: name=build state=directory
