@@ -21,21 +21,20 @@ env:
     - {PY_VER: 3.5, PG_VER: 9.5}
     - {PY_VER: 3.5, PG_VER: 9.6}
 
+before_install:
+  - sudo pip install -q "ansible>=2.4"
 
 install:
-  - sudo pip install -q "ansible>=2.4"
   - ansible-playbook tests/playbook.yml -e pg_ver=${PG_VER} -e py_ver=${PY_VER}
   - docker-compose build
   - docker-compose up -d
 
 script:
-  - docker-compose run --rm
-      -e PGHOST=master -e PGUSER=postgres
-      test make installcheck
-  - docker-compose run --rm
-      -e RS_TEST_SRC_DSN="host=master user=postgres"
-      -e RS_TEST_TGT_DSN="host=slave user=postgres"
-      test py.test -v
+  - docker-compose run --rm test make installcheck
+  - docker-compose run --rm test py.test -v
+
+after_script:
+  - docker-compose down
 
 notifications:
   email: false

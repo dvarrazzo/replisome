@@ -6,6 +6,12 @@ RUN pip{{maybe3}} install -q -U pip
 ADD tests/pytests/requirements.txt /code/tests/pytests/
 RUN pip{{maybe3}} install -q -r /code/tests/pytests/requirements.txt
 
+ENV PGUSER=postgres
+ENV PGHOST=master
+ENV PG_REGRESS_DIFF_OPTS=-u
+ENV RS_TEST_SRC_DSN="host=master"
+ENV RS_TEST_TGT_DSN="host=slave"
+
 ADD ./ /code
 WORKDIR /code
 
