@@ -369,7 +369,7 @@ package.
 Requirements
 ------------
 
-Python 2.7 or later [TODO: python 3]
+Python 2.7 or later
 
 
 Installation

@@ -9,23 +9,23 @@ services:
 
 python:
   - 2.7
+  - 3.5
+  - 3.6
 
 env:
   global:
     - COMPOSE_FILE=tests/build/docker-compose.yml
   matrix:
-    - {PY_VER: 2.7, PG_VER: 9.4}
-    - {PY_VER: 2.7, PG_VER: 9.5}
-    - {PY_VER: 2.7, PG_VER: 9.6}
-    - {PY_VER: 3.5, PG_VER: 9.4}
-    - {PY_VER: 3.5, PG_VER: 9.5}
-    - {PY_VER: 3.5, PG_VER: 9.6}
+    - PG_VER: 9.4
+    - PG_VER: 9.5
+    - PG_VER: 9.6
 
 before_install:
   - sudo pip install -q "ansible>=2.4"
 
 install:
-  - ansible-playbook tests/playbook.yml -e pg_ver=${PG_VER} -e py_ver=${PY_VER}
+  - ansible-playbook tests/playbook.yml
+      -e pg_ver=${PG_VER} -e py_ver=${TRAVIS_PYTHON_VERSION}
   - docker-compose build
   - docker-compose up -d
 

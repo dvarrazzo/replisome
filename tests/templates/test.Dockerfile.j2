@@ -1,10 +1,19 @@
 FROM replisome/base.{{pg_ver}}
 
-RUN apt-get -qq install -y python{{py_ver}} python{{maybe3}}-pip
-RUN pip{{maybe3}} install -q -U pip
+{% if py_ver == "3.6" %}
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 \
+    --recv-keys 4AB0F789CBA31744CC7DA76A8CF63AD3F06FC659
+RUN echo "deb http://ppa.launchpad.net/jonathonf/python-3.6/ubuntu xenial main" \
+    > /etc/apt/sources.list.d/jonathonf.list
+RUN apt-get -qq update
+{% endif %}
+
+RUN apt-get -qq install -y python{{py_ver}} curl
+RUN curl -s -O https://bootstrap.pypa.io/get-pip.py
+RUN python{{py_ver}} get-pip.py
 
 ADD tests/pytests/requirements.txt /code/tests/pytests/
-RUN pip{{maybe3}} install -q -r /code/tests/pytests/requirements.txt
+RUN pip install -q -r /code/tests/pytests/requirements.txt
 
 ENV PGUSER=postgres
 ENV PGHOST=master
